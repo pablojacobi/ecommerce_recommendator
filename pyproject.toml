@@ -69,6 +69,8 @@ ignore = [
 "apps/**/models.py" = ["RUF012"]
 "apps/**/admin.py" = ["RUF012"]
 "apps/**/forms.py" = ["RUF012"]
+# Gemini service needs lazy import to avoid import errors when google-genai not installed
+"services/gemini/service.py" = ["PLC0415"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["apps", "core", "services"]
@@ -109,6 +111,9 @@ module = [
     "tenacity.*",
     "sentry_sdk.*",
     "debug_toolbar.*",
+    "google",
+    "google.genai",
+    "google.genai.*",
 ]
 ignore_missing_imports = true
 
