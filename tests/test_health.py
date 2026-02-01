@@ -1,5 +1,7 @@
 """Tests for health check endpoint."""
 
+from unittest.mock import patch
+
 import pytest
 from django.test import Client
 
@@ -36,3 +38,17 @@ class TestHealthCheck:
         assert "checks" in data
         assert "database" in data["checks"]
         assert data["checks"]["database"]["status"] == "healthy"
+
+    def test_health_check_returns_503_when_database_unhealthy(
+        self, test_client: Client
+    ) -> None:
+        """Health check should return 503 when database is unhealthy."""
+        with patch("core.health.connection") as mock_connection:
+            mock_connection.cursor.side_effect = Exception("Database error")
+            response = test_client.get("/health/")
+
+        assert response.status_code == 503
+        data = response.json()
+        assert data["status"] == "degraded"
+        assert data["checks"]["database"]["status"] == "unhealthy"
+        assert "Database error" in data["checks"]["database"]["error"]

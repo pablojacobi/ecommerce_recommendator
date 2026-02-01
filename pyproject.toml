@@ -164,6 +164,9 @@ omit = [
     "htmlcov/*",
 ]
 
+[tool.coverage.paths]
+source = ["."]
+
 [tool.coverage.report]
 exclude_lines = [
     "pragma: no cover",
@@ -176,6 +179,9 @@ exclude_lines = [
     "@abstractmethod",
     "@abc.abstractmethod",
     "\\.\\.\\.",
+    # Debug toolbar is only loaded when DEBUG=True
+    "if settings.DEBUG:",
+    "import debug_toolbar",
 ]
 show_missing = true
 precision = 2
