@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import asyncio
+from decimal import Decimal
+from typing import TYPE_CHECKING
 
 from core.logging import get_logger
 from core.result import Failure, Result, Success, failure, success
@@ -13,7 +15,12 @@ from services.search.types import (
     EnrichedProduct,
     MarketplaceSearchResult,
     SearchRequest,
+    TaxInfo,
 )
+from services.taxes import TaxBreakdown, TaxCalculationRequest, TaxCalculatorService
+
+if TYPE_CHECKING:
+    from services.marketplaces.base import ProductResult
 
 logger = get_logger(__name__)
 
@@ -40,6 +47,7 @@ class SearchOrchestrator:
         self,
         factory: MarketplaceFactory,
         default_timeout: float = 30.0,
+        tax_calculator: TaxCalculatorService | None = None,
     ) -> None:
         """
         Initialize the orchestrator.
@@ -47,9 +55,11 @@ class SearchOrchestrator:
         Args:
             factory: Factory for creating marketplace adapters.
             default_timeout: Default timeout for searches in seconds.
+            tax_calculator: Optional tax calculator for import tax estimation.
         """
         self._factory = factory
         self._default_timeout = default_timeout
+        self._tax_calculator = tax_calculator or TaxCalculatorService()
         self._adapters: dict[str, MarketplaceAdapter] = {}
 
     async def search(
@@ -100,7 +110,11 @@ class SearchOrchestrator:
             query=intent.query,
         )
 
-        # Mark best prices
+        # Calculate import taxes if destination country specified
+        if request.destination_country:
+            self._calculate_taxes(aggregated.products, request.destination_country)
+
+        # Mark best prices (consider taxes if available)
         self._mark_best_prices(aggregated.products)
 
         logger.info(
@@ -109,6 +123,7 @@ class SearchOrchestrator:
             marketplaces=len(adapters),
             total_results=aggregated.total_count,
             successful=aggregated.successful_marketplaces,
+            destination_country=request.destination_country,
         )
 
         return success(aggregated)
@@ -301,8 +316,8 @@ class SearchOrchestrator:
         if not products:
             return
 
-        # Sort by price to assign ranks
-        sorted_by_price = sorted(products, key=lambda p: p.product.price)
+        # Sort by total cost (including taxes if available)
+        sorted_by_price = sorted(products, key=self._get_comparable_price)
 
         # Assign price ranks
         for rank, product in enumerate(sorted_by_price, start=1):
@@ -311,6 +326,59 @@ class SearchOrchestrator:
         # Mark the cheapest as best price
         # sorted_by_price is guaranteed non-empty because we check products above
         sorted_by_price[0].is_best_price = True
+
+    def _get_comparable_price(self, product: EnrichedProduct) -> Decimal:
+        """Get the price to use for comparison (total with taxes if available)."""
+        if product.tax_info:
+            return product.tax_info.total_with_taxes
+        return product.product.total_price
+
+    def _calculate_taxes(
+        self,
+        products: list[EnrichedProduct],
+        destination_country: str,
+    ) -> None:
+        """Calculate import taxes for all products."""
+        for product in products:
+            tax_info = self._calculate_product_tax(product.product, destination_country)
+            if tax_info:
+                product.tax_info = tax_info
+
+    def _calculate_product_tax(
+        self,
+        product: ProductResult,
+        destination_country: str,
+    ) -> TaxInfo | None:
+        """Calculate tax for a single product."""
+        request = TaxCalculationRequest(
+            product_price=product.price,
+            shipping_cost=product.shipping_cost or Decimal("0"),
+            source_currency=product.currency,
+            destination_country=destination_country,
+        )
+
+        result = self._tax_calculator.calculate(request)
+
+        if isinstance(result, Success):
+            breakdown: TaxBreakdown = result.value
+            return TaxInfo(
+                customs_duty=breakdown.customs_duty,
+                vat=breakdown.vat,
+                total_taxes=breakdown.total_taxes,
+                total_with_taxes=breakdown.total_cost,
+                destination_country=breakdown.destination_country,
+                destination_country_name=breakdown.destination_country_name,
+                de_minimis_applied=breakdown.de_minimis_applied,
+                is_estimated=breakdown.is_estimated,
+                notes=breakdown.notes,
+            )
+
+        logger.warning(
+            "Failed to calculate taxes for product",
+            product_id=product.id,
+            error=str(result.error),
+        )
+        return None
 
     async def close(self) -> None:
         """Close all adapters."""

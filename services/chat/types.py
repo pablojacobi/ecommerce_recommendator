@@ -21,6 +21,7 @@ class ChatRequest:
         user_id: ID of the user.
         marketplace_codes: Marketplaces to search.
         conversation_history: Previous messages for context.
+        destination_country: ISO country code for tax calculation.
     """
 
     content: str
@@ -28,6 +29,7 @@ class ChatRequest:
     user_id: str
     marketplace_codes: tuple[str, ...] = ()
     conversation_history: tuple[dict[str, str], ...] = ()
+    destination_country: str | None = None
 
 
 @dataclass(slots=True)

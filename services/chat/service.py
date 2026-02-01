@@ -62,6 +62,7 @@ class ChatService:
             conversation_id=request.conversation_id,
             content_length=len(request.content),
             marketplaces=request.marketplace_codes,
+            destination_country=request.destination_country,
         )
 
         try:
@@ -163,6 +164,7 @@ class ChatService:
             intent=search_intent,
             marketplace_codes=request.marketplace_codes,
             user_id=request.user_id,
+            destination_country=request.destination_country,
         )
 
         # Execute search
@@ -297,9 +299,22 @@ class ChatService:
         )
         if best_price_product:
             product = best_price_product.product
+            price_text = f"{product.currency} {product.price:,.0f}"
+
+            # Add tax info if available
+            if best_price_product.tax_info:
+                tax_info = best_price_product.tax_info
+                price_text = (
+                    f"{product.currency} {product.price:,.0f} "
+                    f"(+ USD {tax_info.total_taxes:,.2f} impuestos = "
+                    f"USD {tax_info.total_with_taxes:,.2f} total)"
+                )
+                if tax_info.de_minimis_applied:
+                    price_text += " [exento de impuestos]"
+
             response_parts.append(
                 f"\n\n💰 Mejor precio: {product.title[:50]}... "
-                f"a {product.currency} {product.price:,.0f} "
+                f"a {price_text} "
                 f"en {best_price_product.marketplace_name}."
             )
 

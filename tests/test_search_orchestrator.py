@@ -13,7 +13,8 @@ from services.gemini.types import SearchIntent
 from services.marketplaces.base import ProductResult, SearchResult, SortOrder
 from services.marketplaces.errors import NetworkError
 from services.search.orchestrator import SearchOrchestrator, SearchOrchestratorError
-from services.search.types import SearchRequest
+from services.search.types import SearchRequest, TaxInfo
+from services.taxes import TaxBreakdown, TaxCalculatorService
 
 
 class TestSearchOrchestratorError:
@@ -989,3 +990,335 @@ class TestSearchOrchestratorEdgeCases:
 
         assert isinstance(result, Success)
         assert len(result.value.products) == 1
+
+
+class TestSearchOrchestratorTaxCalculation:
+    """Tests for tax calculation integration."""
+
+    @pytest.fixture()
+    def mock_factory(self) -> MagicMock:
+        """Create a mock factory."""
+        return MagicMock()
+
+    @pytest.fixture()
+    def mock_tax_calculator(self) -> MagicMock:
+        """Create a mock tax calculator."""
+        return MagicMock(spec=TaxCalculatorService)
+
+    @pytest.mark.asyncio
+    async def test_search_with_destination_country(
+        self,
+        mock_factory: MagicMock,
+        mock_tax_calculator: MagicMock,
+    ) -> None:
+        """Search should calculate taxes when destination country specified."""
+        adapter = AsyncMock()
+        adapter.marketplace_code = "EBAY_US"
+        adapter.marketplace_name = "eBay United States"
+        adapter.search.return_value = success(
+            SearchResult(
+                products=(
+                    ProductResult(
+                        id="1",
+                        marketplace_code="EBAY_US",
+                        title="Laptop",
+                        price=Decimal("100"),
+                        currency="USD",
+                        url="https://ebay.com/1",
+                        shipping_cost=Decimal("20"),
+                    ),
+                ),
+                total_count=1,
+                has_more=False,
+                marketplace_code="EBAY_US",
+            )
+        )
+        mock_factory.get_adapter.return_value = Success(adapter)
+
+        # Mock tax calculation
+        mock_tax_calculator.calculate.return_value = success(
+            TaxBreakdown(
+                product_price_usd=Decimal("100"),
+                shipping_cost_usd=Decimal("20"),
+                customs_duty=Decimal("6"),
+                vat=Decimal("23.94"),
+                total_taxes=Decimal("29.94"),
+                total_cost=Decimal("149.94"),
+                destination_country="CL",
+                destination_country_name="Chile",
+                vat_rate=Decimal("19"),
+                customs_duty_rate=Decimal("6"),
+                de_minimis_applied=False,
+            )
+        )
+
+        orchestrator = SearchOrchestrator(mock_factory, tax_calculator=mock_tax_calculator)
+        intent = SearchIntent(query="laptop", original_query="laptop")
+        request = SearchRequest(
+            intent=intent,
+            marketplace_codes=("EBAY_US",),
+            destination_country="CL",
+        )
+
+        result = await orchestrator.search(request)
+
+        assert isinstance(result, Success)
+        assert len(result.value.products) == 1
+        product = result.value.products[0]
+        assert product.tax_info is not None
+        assert product.tax_info.customs_duty == Decimal("6")
+        assert product.tax_info.vat == Decimal("23.94")
+        assert product.tax_info.total_with_taxes == Decimal("149.94")
+
+    @pytest.mark.asyncio
+    async def test_search_without_destination_country(
+        self,
+        mock_factory: MagicMock,
+        mock_tax_calculator: MagicMock,
+    ) -> None:
+        """Search should not calculate taxes without destination country."""
+        adapter = AsyncMock()
+        adapter.marketplace_code = "MLC"
+        adapter.marketplace_name = "MercadoLibre Chile"
+        adapter.search.return_value = success(
+            SearchResult(
+                products=(
+                    ProductResult(
+                        id="1",
+                        marketplace_code="MLC",
+                        title="Laptop",
+                        price=Decimal("100"),
+                        currency="CLP",
+                        url="https://mlc.com/1",
+                    ),
+                ),
+                total_count=1,
+                has_more=False,
+                marketplace_code="MLC",
+            )
+        )
+        mock_factory.get_adapter.return_value = Success(adapter)
+
+        orchestrator = SearchOrchestrator(mock_factory, tax_calculator=mock_tax_calculator)
+        intent = SearchIntent(query="laptop", original_query="laptop")
+        request = SearchRequest(
+            intent=intent,
+            marketplace_codes=("MLC",),
+            # No destination_country
+        )
+
+        result = await orchestrator.search(request)
+
+        assert isinstance(result, Success)
+        assert result.value.products[0].tax_info is None
+        mock_tax_calculator.calculate.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_tax_calculation_failure_handled(
+        self,
+        mock_factory: MagicMock,
+        mock_tax_calculator: MagicMock,
+    ) -> None:
+        """Tax calculation failure should not break search."""
+        adapter = AsyncMock()
+        adapter.marketplace_code = "EBAY_US"
+        adapter.marketplace_name = "eBay United States"
+        adapter.search.return_value = success(
+            SearchResult(
+                products=(
+                    ProductResult(
+                        id="1",
+                        marketplace_code="EBAY_US",
+                        title="Laptop",
+                        price=Decimal("100"),
+                        currency="USD",
+                        url="https://ebay.com/1",
+                    ),
+                ),
+                total_count=1,
+                has_more=False,
+                marketplace_code="EBAY_US",
+            )
+        )
+        mock_factory.get_adapter.return_value = Success(adapter)
+
+        # Mock tax calculation failure
+        from services.taxes.service import TaxCalculatorError
+
+        mock_tax_calculator.calculate.return_value = failure(
+            TaxCalculatorError("Tax calculation failed")
+        )
+
+        orchestrator = SearchOrchestrator(mock_factory, tax_calculator=mock_tax_calculator)
+        intent = SearchIntent(query="laptop", original_query="laptop")
+        request = SearchRequest(
+            intent=intent,
+            marketplace_codes=("EBAY_US",),
+            destination_country="CL",
+        )
+
+        result = await orchestrator.search(request)
+
+        # Search should succeed, just without tax info
+        assert isinstance(result, Success)
+        assert result.value.products[0].tax_info is None
+
+    @pytest.mark.asyncio
+    async def test_best_price_considers_taxes(
+        self,
+        mock_factory: MagicMock,
+        mock_tax_calculator: MagicMock,
+    ) -> None:
+        """Best price should consider total with taxes."""
+        adapter = AsyncMock()
+        adapter.marketplace_code = "EBAY_US"
+        adapter.marketplace_name = "eBay United States"
+        adapter.search.return_value = success(
+            SearchResult(
+                products=(
+                    # Cheaper base price but higher taxes
+                    ProductResult(
+                        id="1",
+                        marketplace_code="EBAY_US",
+                        title="Laptop 1",
+                        price=Decimal("100"),
+                        currency="USD",
+                        url="https://ebay.com/1",
+                    ),
+                    # Higher base price but lower taxes
+                    ProductResult(
+                        id="2",
+                        marketplace_code="EBAY_US",
+                        title="Laptop 2",
+                        price=Decimal("150"),
+                        currency="USD",
+                        url="https://ebay.com/2",
+                    ),
+                ),
+                total_count=2,
+                has_more=False,
+                marketplace_code="EBAY_US",
+            )
+        )
+        mock_factory.get_adapter.return_value = Success(adapter)
+
+        def calculate_taxes(request: Any) -> Any:
+            if request.product_price == Decimal("100"):
+                # Higher total due to shipping
+                return success(
+                    TaxBreakdown(
+                        product_price_usd=Decimal("100"),
+                        shipping_cost_usd=Decimal("0"),
+                        customs_duty=Decimal("50"),
+                        vat=Decimal("50"),
+                        total_taxes=Decimal("100"),
+                        total_cost=Decimal("200"),  # 100 + 100 taxes
+                        destination_country="CL",
+                        destination_country_name="Chile",
+                        vat_rate=Decimal("19"),
+                        customs_duty_rate=Decimal("6"),
+                    )
+                )
+            else:
+                # Lower total despite higher base price
+                return success(
+                    TaxBreakdown(
+                        product_price_usd=Decimal("150"),
+                        shipping_cost_usd=Decimal("0"),
+                        customs_duty=Decimal("10"),
+                        vat=Decimal("20"),
+                        total_taxes=Decimal("30"),
+                        total_cost=Decimal("180"),  # 150 + 30 taxes
+                        destination_country="CL",
+                        destination_country_name="Chile",
+                        vat_rate=Decimal("19"),
+                        customs_duty_rate=Decimal("6"),
+                    )
+                )
+
+        mock_tax_calculator.calculate.side_effect = calculate_taxes
+
+        orchestrator = SearchOrchestrator(mock_factory, tax_calculator=mock_tax_calculator)
+        intent = SearchIntent(query="laptop", original_query="laptop")
+        request = SearchRequest(
+            intent=intent,
+            marketplace_codes=("EBAY_US",),
+            destination_country="CL",
+        )
+
+        result = await orchestrator.search(request)
+
+        assert isinstance(result, Success)
+        # Product with $150 base but $180 total should be best price
+        best_price = next(p for p in result.value.products if p.is_best_price)
+        assert best_price.product.price == Decimal("150")
+        assert best_price.tax_info is not None
+        assert best_price.tax_info.total_with_taxes == Decimal("180")
+
+    def test_get_comparable_price_with_tax_info(
+        self,
+        mock_factory: MagicMock,
+    ) -> None:
+        """_get_comparable_price should return total with taxes if available."""
+        from services.search.types import EnrichedProduct
+
+        orchestrator = SearchOrchestrator(mock_factory)
+
+        product = EnrichedProduct(
+            product=ProductResult(
+                id="1",
+                marketplace_code="EBAY_US",
+                title="Laptop",
+                price=Decimal("100"),
+                currency="USD",
+                url="https://ebay.com/1",
+            ),
+            marketplace_code="EBAY_US",
+            marketplace_name="eBay United States",
+            tax_info=TaxInfo(
+                customs_duty=Decimal("6"),
+                vat=Decimal("19"),
+                total_taxes=Decimal("25"),
+                total_with_taxes=Decimal("125"),
+                destination_country="CL",
+                destination_country_name="Chile",
+            ),
+        )
+
+        price = orchestrator._get_comparable_price(product)
+        assert price == Decimal("125")
+
+    def test_get_comparable_price_without_tax_info(
+        self,
+        mock_factory: MagicMock,
+    ) -> None:
+        """_get_comparable_price should return product total without taxes."""
+        from services.search.types import EnrichedProduct
+
+        orchestrator = SearchOrchestrator(mock_factory)
+
+        product = EnrichedProduct(
+            product=ProductResult(
+                id="1",
+                marketplace_code="MLC",
+                title="Laptop",
+                price=Decimal("100"),
+                currency="CLP",
+                url="https://mlc.com/1",
+                shipping_cost=Decimal("10"),
+            ),
+            marketplace_code="MLC",
+            marketplace_name="MercadoLibre Chile",
+        )
+
+        price = orchestrator._get_comparable_price(product)
+        assert price == Decimal("110")  # price + shipping
+
+    def test_init_creates_default_tax_calculator(
+        self,
+        mock_factory: MagicMock,
+    ) -> None:
+        """Orchestrator should create default tax calculator if not provided."""
+        orchestrator = SearchOrchestrator(mock_factory)
+        assert orchestrator._tax_calculator is not None
+        assert isinstance(orchestrator._tax_calculator, TaxCalculatorService)
