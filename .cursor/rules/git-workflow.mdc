@@ -1,0 +1,32 @@
+---
+description: Git workflow and CI/CD rules for ecommerce_recommendator
+alwaysApply: true
+---
+
+# Git Workflow Rules
+
+## CI Requirements
+
+- **NEVER merge or push to main if CI is failing**
+- Always wait for CI checks to pass before merging PRs
+- If CI fails, fix the issues first - no exceptions
+
+## Before Pushing
+
+1. Run locally first:
+   ```bash
+   ruff check . && ruff format --check . && mypy . && pytest
+   ```
+2. Only push if all checks pass locally
+
+## Branch Protection Note
+
+GitHub Free does not support required status checks on branches. This rule exists because we cannot enforce it at the GitHub level - we must enforce it manually.
+
+## PR Workflow
+
+1. Create feature branch: `git checkout -b feat/feature-name`
+2. Make changes with semantic commits
+3. Push and create PR
+4. Wait for CI to pass (lint, type-check, test, security)
+5. Only merge after ALL checks are green
