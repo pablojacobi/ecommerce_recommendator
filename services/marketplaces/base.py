@@ -192,3 +192,11 @@ class MarketplaceAdapter(Protocol):
             True if the API is healthy, False otherwise.
         """
         ...
+
+    async def close(self) -> None:
+        """
+        Close the adapter and release resources.
+
+        Should be called when the adapter is no longer needed.
+        """
+        ...

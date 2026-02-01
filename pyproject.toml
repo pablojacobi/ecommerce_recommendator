@@ -71,6 +71,8 @@ ignore = [
 "apps/**/forms.py" = ["RUF012"]
 # Gemini service needs lazy import to avoid import errors when google-genai not installed
 "services/gemini/service.py" = ["PLC0415"]
+# Orchestrator uses MarketplaceFactory at runtime (not just for typing)
+"services/search/orchestrator.py" = ["TC001"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["apps", "core", "services"]

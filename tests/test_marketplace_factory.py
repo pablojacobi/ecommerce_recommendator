@@ -67,6 +67,10 @@ class MockAdapter:
         """Mock healthcheck."""
         return True
 
+    async def close(self) -> None:
+        """Mock close."""
+        pass
+
 
 class TestAdapterNotFoundError:
     """Tests for AdapterNotFoundError."""
