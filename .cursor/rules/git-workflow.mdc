@@ -19,9 +19,16 @@ alwaysApply: true
    ```
 2. Only push if all checks pass locally
 
-## Branch Protection Note
+## Branch Protection (Configured)
 
-GitHub Free does not support required status checks on branches. This rule exists because we cannot enforce it at the GitHub level - we must enforce it manually.
+Branch protection is enabled on `main` with required status checks:
+- Lint (Ruff)
+- Type Check (mypy)
+- Test (pytest)
+- Security Scan
+- All Checks Passed
+
+GitHub will block merges if any check fails.
 
 ## PR Workflow
 
