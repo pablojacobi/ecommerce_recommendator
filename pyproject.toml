@@ -71,7 +71,8 @@ ignore = [
 "apps/**/forms.py" = ["RUF012"]
 # DRF patterns: serializer Meta classes, viewset permission_classes, unused args required by framework
 "apps/**/serializers.py" = ["RUF012"]
-"apps/**/views.py" = ["RUF012", "ARG002", "TC002"]
+# Views need local imports to avoid circular dependencies with services
+"apps/**/views.py" = ["RUF012", "ARG002", "TC002", "PLC0415"]
 # Gemini service needs lazy import to avoid import errors when google-genai not installed
 "services/gemini/service.py" = ["PLC0415"]
 # Orchestrator uses MarketplaceFactory at runtime (not just for typing)

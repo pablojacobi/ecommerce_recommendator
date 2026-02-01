@@ -157,12 +157,22 @@ class TestConversationChatEndpoint:
         self, authenticated_client: APIClient, conversation: Conversation
     ) -> None:
         """Chat should create messages and return response."""
+        from unittest.mock import patch
+
+        from services.chat.types import ChatResponse
+
+        mock_response = ChatResponse(message="Found laptops for you!")
+
         url = reverse("api:conversation-chat", args=[conversation.id])
-        response = authenticated_client.post(
-            url,
-            data={"content": "Find me a laptop"},
-            format="json",
-        )
+        with patch(
+            "apps.api.views.ConversationViewSet._invoke_chat_service",
+            return_value=mock_response,
+        ):
+            response = authenticated_client.post(
+                url,
+                data={"content": "Find me a laptop"},
+                format="json",
+            )
 
         assert response.status_code == status.HTTP_200_OK
         assert "message" in response.data
@@ -172,13 +182,23 @@ class TestConversationChatEndpoint:
 
     def test_chat_updates_title(self, authenticated_client: APIClient, user: User) -> None:
         """First message should update conversation title."""
+        from unittest.mock import patch
+
+        from services.chat.types import ChatResponse
+
+        mock_response = ChatResponse(message="Found laptops!")
+
         convo = Conversation.objects.create(user=user, title="")
         url = reverse("api:conversation-chat", args=[convo.id])
-        response = authenticated_client.post(
-            url,
-            data={"content": "Find me a gaming laptop"},
-            format="json",
-        )
+        with patch(
+            "apps.api.views.ConversationViewSet._invoke_chat_service",
+            return_value=mock_response,
+        ):
+            response = authenticated_client.post(
+                url,
+                data={"content": "Find me a gaming laptop"},
+                format="json",
+            )
 
         assert response.status_code == status.HTTP_200_OK
         convo.refresh_from_db()
@@ -188,15 +208,25 @@ class TestConversationChatEndpoint:
         self, authenticated_client: APIClient, conversation: Conversation
     ) -> None:
         """Chat should update conversation marketplaces if provided."""
+        from unittest.mock import patch
+
+        from services.chat.types import ChatResponse
+
+        mock_response = ChatResponse(message="Found results!")
+
         url = reverse("api:conversation-chat", args=[conversation.id])
-        response = authenticated_client.post(
-            url,
-            data={
-                "content": "Find laptops",
-                "marketplaces": ["EBAY_US", "EBAY_GB"],
-            },
-            format="json",
-        )
+        with patch(
+            "apps.api.views.ConversationViewSet._invoke_chat_service",
+            return_value=mock_response,
+        ):
+            response = authenticated_client.post(
+                url,
+                data={
+                    "content": "Find laptops",
+                    "marketplaces": ["EBAY_US", "EBAY_GB"],
+                },
+                format="json",
+            )
 
         assert response.status_code == status.HTTP_200_OK
         conversation.refresh_from_db()
@@ -249,6 +279,160 @@ class TestConversationChatEndpoint:
 
         assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
         assert "error" in response.data
+
+    def test_chat_with_search_results(
+        self, authenticated_client: APIClient, conversation: Conversation
+    ) -> None:
+        """Chat should return search results when available."""
+        from decimal import Decimal
+        from unittest.mock import patch
+
+        from services.chat.types import ChatResponse
+        from services.gemini.types import SearchIntent
+        from services.marketplaces.base import ProductResult, SortOrder
+        from services.search.types import AggregatedResult, EnrichedProduct
+
+        product = ProductResult(
+            id="prod-123",
+            marketplace_code="MLC",
+            title="Test Laptop",
+            price=Decimal("999.99"),
+            currency="CLP",
+            url="https://example.com/laptop",
+            image_url="https://example.com/img.jpg",
+            seller_name="Store",
+            seller_rating=4.5,
+            condition="new",
+            shipping_cost=Decimal("10"),
+            free_shipping=False,
+        )
+        enriched = EnrichedProduct(
+            product=product,
+            marketplace_code="MLC",
+            marketplace_name="MercadoLibre Chile",
+            is_best_price=True,
+            price_rank=1,
+        )
+        search_results = AggregatedResult(
+            products=[enriched],
+            total_count=1,
+            query="laptop",
+            has_more=False,
+        )
+        search_intent = SearchIntent(
+            query="laptop",
+            original_query="Find laptop",
+            sort_order=SortOrder.PRICE_ASC,
+            min_price=Decimal("100"),
+            max_price=Decimal("2000"),
+            limit=20,
+        )
+        mock_response = ChatResponse(
+            message="Found laptops!",
+            search_results=search_results,
+            search_intent=search_intent,
+        )
+
+        url = reverse("api:conversation-chat", args=[conversation.id])
+        with patch(
+            "apps.api.views.ConversationViewSet._invoke_chat_service",
+            return_value=mock_response,
+        ):
+            response = authenticated_client.post(
+                url,
+                data={"content": "Find laptop"},
+                format="json",
+            )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["search_results"] is not None
+        assert response.data["search_results"]["total_count"] == 1
+        assert len(response.data["search_results"]["products"]) == 1
+
+    def test_chat_integration_with_mocked_services(
+        self, authenticated_client: APIClient, conversation: Conversation
+    ) -> None:
+        """Integration test: exercise full path with mocked external services."""
+        from decimal import Decimal
+        from unittest.mock import AsyncMock, MagicMock, patch
+
+        from core.result import success
+        from services.gemini.types import IntentType, SearchIntent
+        from services.marketplaces.base import ProductResult, SortOrder
+        from services.search.types import AggregatedResult, EnrichedProduct
+
+        # Create mock search results
+        product = ProductResult(
+            id="prod-456",
+            marketplace_code="MLC",
+            title="Gaming Laptop",
+            price=Decimal("1500"),
+            currency="CLP",
+            url="https://example.com/gaming",
+            image_url=None,
+            seller_name=None,
+            seller_rating=None,
+            condition="new",
+            shipping_cost=None,
+            free_shipping=True,
+        )
+        enriched = EnrichedProduct(
+            product=product,
+            marketplace_code="MLC",
+            marketplace_name="MercadoLibre Chile",
+            is_best_price=False,
+            price_rank=1,
+        )
+        search_intent = SearchIntent(
+            query="gaming laptop",
+            original_query="Test query",
+            sort_order=SortOrder.RELEVANCE,
+            limit=20,
+        )
+        search_results = AggregatedResult(
+            products=[enriched],
+            total_count=10,
+            query="gaming laptop",
+            has_more=True,
+        )
+
+        # Setup mock gemini service
+        mock_gemini_cls = MagicMock()
+        mock_gemini = MagicMock()
+        mock_gemini.classify_intent = AsyncMock(return_value=success(IntentType.SEARCH))
+        mock_gemini.extract_search_intent = AsyncMock(return_value=success(search_intent))
+        mock_gemini_cls.return_value = mock_gemini
+
+        # Setup mock search orchestrator
+        mock_orchestrator_cls = MagicMock()
+        mock_orchestrator = MagicMock()
+        mock_orchestrator.search = AsyncMock(return_value=success(search_results))
+        mock_orchestrator.close = AsyncMock()
+        mock_orchestrator_cls.return_value = mock_orchestrator
+
+        # Setup mock factory
+        mock_factory_cls = MagicMock()
+
+        conversation.selected_marketplaces = ["MLC"]
+        conversation.save()
+
+        url = reverse("api:conversation-chat", args=[conversation.id])
+        with (
+            patch("services.gemini.service.GeminiService", mock_gemini_cls),
+            patch("services.search.orchestrator.SearchOrchestrator", mock_orchestrator_cls),
+            patch("services.marketplaces.factory.MarketplaceFactory", mock_factory_cls),
+        ):
+            response = authenticated_client.post(
+                url,
+                data={"content": "Find gaming laptop"},
+                format="json",
+            )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert "message" in response.data
+        # Verify services were called
+        mock_gemini.classify_intent.assert_called_once()
+        mock_orchestrator.search.assert_called_once()
 
 
 class TestConversationClearEndpoint:
