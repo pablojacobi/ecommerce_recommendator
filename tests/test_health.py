@@ -39,9 +39,7 @@ class TestHealthCheck:
         assert "database" in data["checks"]
         assert data["checks"]["database"]["status"] == "healthy"
 
-    def test_health_check_returns_503_when_database_unhealthy(
-        self, test_client: Client
-    ) -> None:
+    def test_health_check_returns_503_when_database_unhealthy(self, test_client: Client) -> None:
         """Health check should return 503 when database is unhealthy."""
         with patch("core.health.connection") as mock_connection:
             mock_connection.cursor.side_effect = Exception("Database error")
