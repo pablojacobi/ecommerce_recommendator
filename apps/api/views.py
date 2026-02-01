@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
+from asgiref.sync import async_to_sync
 from django.db import transaction
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
@@ -26,6 +27,8 @@ from core.logging import get_logger
 
 if TYPE_CHECKING:
     from django.db.models import QuerySet
+
+    from services.chat.types import ChatResponse as ChatServiceResponse
 
 logger = get_logger(__name__)
 
@@ -109,9 +112,8 @@ class ConversationViewSet(viewsets.ModelViewSet):
         """
         Process a chat message and return response.
 
-        This is a simplified implementation that creates messages
-        without actual AI/search integration. The full integration
-        will be added in a subsequent PR.
+        Creates user message, invokes ChatService for AI processing,
+        and stores the assistant response.
         """
         with transaction.atomic():
             # Create user message
@@ -127,23 +129,132 @@ class ConversationViewSet(viewsets.ModelViewSet):
                 conversation.title = title
                 conversation.save(update_fields=["title", "updated_at"])
 
-            # Create assistant response (placeholder for now)
-            # Full AI integration will be added in next PR
+            # Process with ChatService
+            chat_response = self._invoke_chat_service(conversation, content)
+
+            # Build search results data
+            search_results_data = self._build_search_results(chat_response)
+
+            # Create assistant message
             assistant_message = Message.objects.create(
                 conversation=conversation,
                 role=Message.Role.ASSISTANT,
-                content=f"Received your query: '{content}'. Search functionality coming soon!",
-                search_params={"query": content},
+                content=chat_response.message,
+                search_params=self._build_search_params(chat_response),
+                search_results=search_results_data,
             )
 
         response_serializer = ChatResponseSerializer(
             data={
                 "message": MessageSerializer(assistant_message).data,
-                "search_results": None,
+                "search_results": search_results_data,
             }
         )
         response_serializer.is_valid()
         return response_serializer.data
+
+    def _invoke_chat_service(
+        self,
+        conversation: Conversation,
+        content: str,
+    ) -> ChatServiceResponse:
+        """Invoke the ChatService to process the message."""
+        from django.conf import settings
+
+        from services.chat import ChatRequest, ChatService
+        from services.gemini.service import GeminiService
+        from services.marketplaces.factory import MarketplaceFactory
+        from services.search.orchestrator import SearchOrchestrator
+
+        # Build conversation history from last N messages
+        history = [
+            {"role": msg.role, "content": msg.content}
+            for msg in conversation.messages.order_by("-created_at")[:10]
+        ]
+        history.reverse()  # Oldest first
+
+        # Create chat request
+        request = ChatRequest(
+            content=content,
+            conversation_id=str(conversation.id),
+            user_id=str(conversation.user_id),
+            marketplace_codes=tuple(conversation.selected_marketplaces or []),
+            conversation_history=tuple(history),
+        )
+
+        # Initialize services
+        gemini_service = GeminiService(api_key=settings.GEMINI_API_KEY)
+        factory = MarketplaceFactory()
+        search_orchestrator = SearchOrchestrator(factory=factory)
+        chat_service = ChatService(
+            gemini_service=gemini_service,
+            search_orchestrator=search_orchestrator,
+        )
+
+        # Process request (sync wrapper around async)
+        response = async_to_sync(chat_service.process)(request)
+
+        # Clean up
+        async_to_sync(chat_service.close)()
+
+        return response
+
+    def _build_search_results(
+        self,
+        chat_response: ChatServiceResponse,
+    ) -> dict[str, Any] | None:
+        """Build search results data from chat response."""
+        if not chat_response.search_results:
+            return None
+
+        results = chat_response.search_results
+        products = [
+            {
+                "id": p.product.id,
+                "marketplace_code": p.marketplace_code,
+                "marketplace_name": p.marketplace_name,
+                "title": p.product.title,
+                "price": str(p.product.price),
+                "currency": p.product.currency,
+                "url": p.product.url,
+                "image_url": p.product.image_url,
+                "seller_name": p.product.seller_name,
+                "seller_rating": p.product.seller_rating,
+                "condition": p.product.condition,
+                "shipping_cost": str(p.product.shipping_cost) if p.product.shipping_cost else None,
+                "free_shipping": p.product.free_shipping,
+                "is_best_price": p.is_best_price,
+                "price_rank": p.price_rank,
+            }
+            for p in results.products
+        ]
+
+        return {
+            "products": products,
+            "total_count": results.total_count,
+            "query": results.query,
+            "has_more": results.has_more,
+            "successful_marketplaces": results.successful_marketplaces,
+            "failed_marketplaces": results.failed_marketplaces,
+        }
+
+    def _build_search_params(
+        self,
+        chat_response: ChatServiceResponse,
+    ) -> dict[str, Any] | None:
+        """Build search params from chat response."""
+        if not chat_response.search_intent:
+            return None
+
+        intent = chat_response.search_intent
+        return {
+            "query": intent.query,
+            "original_query": intent.original_query,
+            "sort_order": intent.sort_order.value if intent.sort_order else None,
+            "min_price": str(intent.min_price) if intent.min_price else None,
+            "max_price": str(intent.max_price) if intent.max_price else None,
+            "limit": intent.limit,
+        }
 
     @action(detail=True, methods=["post"])
     def clear(self, request: Request, pk: str | None = None) -> Response:

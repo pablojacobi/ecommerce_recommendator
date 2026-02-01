@@ -45,3 +45,6 @@ LOGGING = {
         "level": "DEBUG",
     },
 }
+
+# External service API keys for testing (mocked in tests)
+GEMINI_API_KEY = "test-gemini-api-key"
