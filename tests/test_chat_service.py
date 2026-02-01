@@ -588,6 +588,150 @@ class TestChatServiceResponseFormatting:
         assert response.is_success
 
 
+class TestChatServiceTaxIntegration:
+    """Tests for tax information in responses."""
+
+    @pytest.mark.asyncio()
+    async def test_format_best_price_with_taxes(
+        self,
+        chat_service: ChatService,
+        mock_gemini: MagicMock,
+        mock_search: MagicMock,
+        sample_search_intent: SearchIntent,
+        sample_product: ProductResult,
+    ) -> None:
+        """Should format best price with tax breakdown."""
+        from services.search.types import TaxInfo
+
+        enriched = EnrichedProduct(
+            product=sample_product,
+            marketplace_code="EBAY_US",
+            marketplace_name="eBay United States",
+            is_best_price=True,
+            price_rank=1,
+            tax_info=TaxInfo(
+                customs_duty=Decimal("60"),
+                vat=Decimal("189.99"),
+                total_taxes=Decimal("249.99"),
+                total_with_taxes=Decimal("1249.98"),
+                destination_country="CL",
+                destination_country_name="Chile",
+                de_minimis_applied=False,
+            ),
+        )
+        result = AggregatedResult(
+            products=[enriched],
+            marketplace_results=[],
+            total_count=1,
+            query="laptop",
+        )
+
+        request = ChatRequest(
+            content="Busco laptop",
+            conversation_id="conv-123",
+            user_id="user-456",
+            marketplace_codes=("EBAY_US",),
+            destination_country="CL",
+        )
+        mock_gemini.classify_intent = AsyncMock(return_value=success(IntentType.SEARCH))
+        mock_gemini.extract_search_intent = AsyncMock(return_value=success(sample_search_intent))
+        mock_search.search = AsyncMock(return_value=success(result))
+
+        response = await chat_service.process(request)
+
+        assert response.is_success
+        # Should include tax info in best price
+        assert "impuestos" in response.message.lower()
+        assert "249.99" in response.message  # Total taxes
+        assert "1,249.98" in response.message  # Total with taxes
+
+    @pytest.mark.asyncio()
+    async def test_format_best_price_with_de_minimis(
+        self,
+        chat_service: ChatService,
+        mock_gemini: MagicMock,
+        mock_search: MagicMock,
+        sample_search_intent: SearchIntent,
+    ) -> None:
+        """Should indicate de minimis exemption."""
+        from services.search.types import TaxInfo
+
+        cheap_product = ProductResult(
+            id="cheap-123",
+            marketplace_code="EBAY_US",
+            title="Cheap Item USB Cable",
+            price=Decimal("9.99"),
+            currency="USD",
+            url="https://ebay.com/cheap",
+        )
+        enriched = EnrichedProduct(
+            product=cheap_product,
+            marketplace_code="EBAY_US",
+            marketplace_name="eBay United States",
+            is_best_price=True,
+            price_rank=1,
+            tax_info=TaxInfo(
+                customs_duty=Decimal("0"),
+                vat=Decimal("0"),
+                total_taxes=Decimal("0"),
+                total_with_taxes=Decimal("9.99"),
+                destination_country="CL",
+                destination_country_name="Chile",
+                de_minimis_applied=True,
+            ),
+        )
+        result = AggregatedResult(
+            products=[enriched],
+            marketplace_results=[],
+            total_count=1,
+            query="usb cable",
+        )
+
+        request = ChatRequest(
+            content="Busco cable usb",
+            conversation_id="conv-123",
+            user_id="user-456",
+            marketplace_codes=("EBAY_US",),
+            destination_country="CL",
+        )
+        mock_gemini.classify_intent = AsyncMock(return_value=success(IntentType.SEARCH))
+        mock_gemini.extract_search_intent = AsyncMock(return_value=success(sample_search_intent))
+        mock_search.search = AsyncMock(return_value=success(result))
+
+        response = await chat_service.process(request)
+
+        assert response.is_success
+        assert "exento" in response.message.lower()
+
+    @pytest.mark.asyncio()
+    async def test_search_passes_destination_country(
+        self,
+        chat_service: ChatService,
+        mock_gemini: MagicMock,
+        mock_search: MagicMock,
+        sample_search_intent: SearchIntent,
+        sample_aggregated_result: AggregatedResult,
+    ) -> None:
+        """Should pass destination_country to search orchestrator."""
+        request = ChatRequest(
+            content="Busco laptop",
+            conversation_id="conv-123",
+            user_id="user-456",
+            marketplace_codes=("EBAY_US",),
+            destination_country="CL",
+        )
+        mock_gemini.classify_intent = AsyncMock(return_value=success(IntentType.SEARCH))
+        mock_gemini.extract_search_intent = AsyncMock(return_value=success(sample_search_intent))
+        mock_search.search = AsyncMock(return_value=success(sample_aggregated_result))
+
+        await chat_service.process(request)
+
+        # Verify search was called with destination_country
+        call_args = mock_search.search.call_args
+        search_request = call_args[0][0]
+        assert search_request.destination_country == "CL"
+
+
 class TestChatServiceClose:
     """Tests for ChatService.close method."""
 

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from decimal import Decimal
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -19,11 +20,41 @@ class SearchRequest:
         intent: The parsed search intent from user query.
         marketplace_codes: List of marketplace codes to search.
         user_id: Optional user ID for tracking.
+        destination_country: Country code for tax calculation (optional).
     """
 
     intent: SearchIntent
     marketplace_codes: tuple[str, ...]
     user_id: str | None = None
+    destination_country: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class TaxInfo:
+    """
+    Tax information for a product.
+
+    Attributes:
+        customs_duty: Customs/import duty in USD.
+        vat: VAT/IVA tax in USD.
+        total_taxes: Sum of all taxes in USD.
+        total_with_taxes: Grand total (price + shipping + taxes) in USD.
+        destination_country: Destination country code.
+        destination_country_name: Destination country name.
+        de_minimis_applied: Whether de minimis exemption applied.
+        is_estimated: Whether values are estimated.
+        notes: Additional notes about taxes.
+    """
+
+    customs_duty: Decimal
+    vat: Decimal
+    total_taxes: Decimal
+    total_with_taxes: Decimal
+    destination_country: str
+    destination_country_name: str
+    de_minimis_applied: bool = False
+    is_estimated: bool = True
+    notes: str = ""
 
 
 @dataclass(slots=True)
@@ -37,6 +68,7 @@ class EnrichedProduct:
         marketplace_name: Display name of the marketplace.
         is_best_price: Whether this is the best price for similar products.
         price_rank: Rank by price among similar products (1 = cheapest).
+        tax_info: Optional tax information for international shipping.
     """
 
     product: ProductResult
@@ -44,6 +76,7 @@ class EnrichedProduct:
     marketplace_name: str
     is_best_price: bool = False
     price_rank: int = 0
+    tax_info: TaxInfo | None = None
 
 
 @dataclass(slots=True)

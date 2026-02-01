@@ -5,6 +5,7 @@ from services.search.types import (
     AggregatedResult,
     MarketplaceSearchResult,
     SearchRequest,
+    TaxInfo,
 )
 
 __all__ = [
@@ -12,4 +13,5 @@ __all__ = [
     "MarketplaceSearchResult",
     "SearchOrchestrator",
     "SearchRequest",
+    "TaxInfo",
 ]

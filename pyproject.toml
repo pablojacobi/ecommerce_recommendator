@@ -79,6 +79,8 @@ ignore = [
 "services/taxes/service.py" = ["PLC0415"]
 # Orchestrator uses MarketplaceFactory at runtime (not just for typing)
 "services/search/orchestrator.py" = ["TC001"]
+# Search types use Decimal at runtime in dataclasses
+"services/search/types.py" = ["TC003"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["apps", "core", "services"]
