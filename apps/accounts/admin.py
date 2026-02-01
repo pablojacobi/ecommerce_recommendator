@@ -7,9 +7,7 @@ from .models import User
 
 
 @admin.register(User)
-# UserAdmin is generic in django-stubs but not subscriptable at runtime (known issue)
-# See: https://github.com/typeddjango/django-stubs/issues/1097
-class UserAdmin(BaseUserAdmin):  # type: ignore[type-arg]
+class UserAdmin(BaseUserAdmin):
     """Admin configuration for custom User model."""
 
     list_display = ("username", "email", "is_staff", "is_active")

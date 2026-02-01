@@ -1,9 +1,11 @@
 """URL configuration for chat app."""
 
-from django.urls import URLPattern
+from django.urls import URLPattern, path
+
+from . import views
 
 app_name = "chat"
 
 urlpatterns: list[URLPattern] = [
-    # URLs will be added in PR #9
+    path("", views.index, name="index"),
 ]

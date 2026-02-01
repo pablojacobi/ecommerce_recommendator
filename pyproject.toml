@@ -58,12 +58,17 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**/*.py" = ["S101", "ARG001", "PLR2004"]
+# Tests: allow asserts, unused args, magic values, hardcoded passwords, inline imports, commented explanations
+"tests/**/*.py" = ["S101", "ARG001", "ARG002", "PLR2004", "S106", "PLC0415", "ERA001"]
 "**/migrations/*.py" = ["E501"]
 # Django settings pattern: wildcard imports from base settings
 "core/settings/development.py" = ["F403", "F405"]
 "core/settings/production.py" = ["F403", "F405"]
 "core/settings/test.py" = ["F403", "F405"]
+# Django patterns: Meta.ordering, admin inlines, form widgets are mutable class attrs
+"apps/**/models.py" = ["RUF012"]
+"apps/**/admin.py" = ["RUF012"]
+"apps/**/forms.py" = ["RUF012"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["apps", "core", "services"]
@@ -115,6 +120,15 @@ ignore_errors = true
 module = "tests.*"
 # Tests use pytest fixtures which have dynamic typing
 disallow_untyped_decorators = false
+
+[[tool.mypy.overrides]]
+module = [
+    "apps.*.admin",
+    "apps.*.forms",
+]
+# Django admin and forms use generic classes not subscriptable at runtime
+# See: https://github.com/typeddjango/django-stubs/issues/1097
+disallow_any_generics = false
 
 [tool.django-stubs]
 django_settings_module = "core.settings.test"

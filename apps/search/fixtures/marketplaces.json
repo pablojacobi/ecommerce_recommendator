@@ -1,0 +1,287 @@
+[
+  {
+    "model": "search.marketplace",
+    "pk": 1,
+    "fields": {
+      "code": "EBAY_US",
+      "name": "eBay USA",
+      "provider": "ebay",
+      "country_code": "US",
+      "country_name": "United States",
+      "api_site_id": "EBAY_US",
+      "currency_code": "USD",
+      "is_active": true,
+      "display_order": 1
+    }
+  },
+  {
+    "model": "search.marketplace",
+    "pk": 2,
+    "fields": {
+      "code": "MLA",
+      "name": "MercadoLibre Argentina",
+      "provider": "mercadolibre",
+      "country_code": "AR",
+      "country_name": "Argentina",
+      "api_site_id": "MLA",
+      "currency_code": "ARS",
+      "is_active": true,
+      "display_order": 10
+    }
+  },
+  {
+    "model": "search.marketplace",
+    "pk": 3,
+    "fields": {
+      "code": "MLB",
+      "name": "MercadoLibre Brasil",
+      "provider": "mercadolibre",
+      "country_code": "BR",
+      "country_name": "Brazil",
+      "api_site_id": "MLB",
+      "currency_code": "BRL",
+      "is_active": true,
+      "display_order": 11
+    }
+  },
+  {
+    "model": "search.marketplace",
+    "pk": 4,
+    "fields": {
+      "code": "MLC",
+      "name": "MercadoLibre Chile",
+      "provider": "mercadolibre",
+      "country_code": "CL",
+      "country_name": "Chile",
+      "api_site_id": "MLC",
+      "currency_code": "CLP",
+      "is_active": true,
+      "display_order": 12
+    }
+  },
+  {
+    "model": "search.marketplace",
+    "pk": 5,
+    "fields": {
+      "code": "MLM",
+      "name": "MercadoLibre Mexico",
+      "provider": "mercadolibre",
+      "country_code": "MX",
+      "country_name": "Mexico",
+      "api_site_id": "MLM",
+      "currency_code": "MXN",
+      "is_active": true,
+      "display_order": 13
+    }
+  },
+  {
+    "model": "search.marketplace",
+    "pk": 6,
+    "fields": {
+      "code": "MCO",
+      "name": "MercadoLibre Colombia",
+      "provider": "mercadolibre",
+      "country_code": "CO",
+      "country_name": "Colombia",
+      "api_site_id": "MCO",
+      "currency_code": "COP",
+      "is_active": true,
+      "display_order": 14
+    }
+  },
+  {
+    "model": "search.marketplace",
+    "pk": 7,
+    "fields": {
+      "code": "MPE",
+      "name": "MercadoLibre Peru",
+      "provider": "mercadolibre",
+      "country_code": "PE",
+      "country_name": "Peru",
+      "api_site_id": "MPE",
+      "currency_code": "PEN",
+      "is_active": true,
+      "display_order": 15
+    }
+  },
+  {
+    "model": "search.marketplace",
+    "pk": 8,
+    "fields": {
+      "code": "MLU",
+      "name": "MercadoLibre Uruguay",
+      "provider": "mercadolibre",
+      "country_code": "UY",
+      "country_name": "Uruguay",
+      "api_site_id": "MLU",
+      "currency_code": "UYU",
+      "is_active": true,
+      "display_order": 16
+    }
+  },
+  {
+    "model": "search.marketplace",
+    "pk": 9,
+    "fields": {
+      "code": "MLV",
+      "name": "MercadoLibre Venezuela",
+      "provider": "mercadolibre",
+      "country_code": "VE",
+      "country_name": "Venezuela",
+      "api_site_id": "MLV",
+      "currency_code": "VES",
+      "is_active": true,
+      "display_order": 17
+    }
+  },
+  {
+    "model": "search.marketplace",
+    "pk": 10,
+    "fields": {
+      "code": "MEC",
+      "name": "MercadoLibre Ecuador",
+      "provider": "mercadolibre",
+      "country_code": "EC",
+      "country_name": "Ecuador",
+      "api_site_id": "MEC",
+      "currency_code": "USD",
+      "is_active": true,
+      "display_order": 18
+    }
+  },
+  {
+    "model": "search.marketplace",
+    "pk": 11,
+    "fields": {
+      "code": "MBO",
+      "name": "MercadoLibre Bolivia",
+      "provider": "mercadolibre",
+      "country_code": "BO",
+      "country_name": "Bolivia",
+      "api_site_id": "MBO",
+      "currency_code": "BOB",
+      "is_active": true,
+      "display_order": 19
+    }
+  },
+  {
+    "model": "search.marketplace",
+    "pk": 12,
+    "fields": {
+      "code": "MPY",
+      "name": "MercadoLibre Paraguay",
+      "provider": "mercadolibre",
+      "country_code": "PY",
+      "country_name": "Paraguay",
+      "api_site_id": "MPY",
+      "currency_code": "PYG",
+      "is_active": true,
+      "display_order": 20
+    }
+  },
+  {
+    "model": "search.marketplace",
+    "pk": 13,
+    "fields": {
+      "code": "MCR",
+      "name": "MercadoLibre Costa Rica",
+      "provider": "mercadolibre",
+      "country_code": "CR",
+      "country_name": "Costa Rica",
+      "api_site_id": "MCR",
+      "currency_code": "CRC",
+      "is_active": true,
+      "display_order": 21
+    }
+  },
+  {
+    "model": "search.marketplace",
+    "pk": 14,
+    "fields": {
+      "code": "MPA",
+      "name": "MercadoLibre Panama",
+      "provider": "mercadolibre",
+      "country_code": "PA",
+      "country_name": "Panama",
+      "api_site_id": "MPA",
+      "currency_code": "USD",
+      "is_active": true,
+      "display_order": 22
+    }
+  },
+  {
+    "model": "search.marketplace",
+    "pk": 15,
+    "fields": {
+      "code": "MRD",
+      "name": "MercadoLibre Rep. Dominicana",
+      "provider": "mercadolibre",
+      "country_code": "DO",
+      "country_name": "Dominican Republic",
+      "api_site_id": "MRD",
+      "currency_code": "DOP",
+      "is_active": true,
+      "display_order": 23
+    }
+  },
+  {
+    "model": "search.marketplace",
+    "pk": 16,
+    "fields": {
+      "code": "MGT",
+      "name": "MercadoLibre Guatemala",
+      "provider": "mercadolibre",
+      "country_code": "GT",
+      "country_name": "Guatemala",
+      "api_site_id": "MGT",
+      "currency_code": "GTQ",
+      "is_active": true,
+      "display_order": 24
+    }
+  },
+  {
+    "model": "search.marketplace",
+    "pk": 17,
+    "fields": {
+      "code": "MHN",
+      "name": "MercadoLibre Honduras",
+      "provider": "mercadolibre",
+      "country_code": "HN",
+      "country_name": "Honduras",
+      "api_site_id": "MHN",
+      "currency_code": "HNL",
+      "is_active": true,
+      "display_order": 25
+    }
+  },
+  {
+    "model": "search.marketplace",
+    "pk": 18,
+    "fields": {
+      "code": "MSV",
+      "name": "MercadoLibre El Salvador",
+      "provider": "mercadolibre",
+      "country_code": "SV",
+      "country_name": "El Salvador",
+      "api_site_id": "MSV",
+      "currency_code": "USD",
+      "is_active": true,
+      "display_order": 26
+    }
+  },
+  {
+    "model": "search.marketplace",
+    "pk": 19,
+    "fields": {
+      "code": "MNI",
+      "name": "MercadoLibre Nicaragua",
+      "provider": "mercadolibre",
+      "country_code": "NI",
+      "country_name": "Nicaragua",
+      "api_site_id": "MNI",
+      "currency_code": "NIO",
+      "is_active": true,
+      "display_order": 27
+    }
+  }
+]

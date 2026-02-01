@@ -1,0 +1,352 @@
+[
+  {
+    "model": "search.importtaxrate",
+    "pk": 1,
+    "fields": {
+      "country_code": "CL",
+      "country_name": "Chile",
+      "vat_rate": "19.00",
+      "customs_duty_rate": "6.00",
+      "de_minimis_usd": "30.00",
+      "currency_code": "CLP",
+      "notes": "Aduanas Chile. IVA 19% + Arancel promedio 6%.",
+      "is_active": true
+    }
+  },
+  {
+    "model": "search.importtaxrate",
+    "pk": 2,
+    "fields": {
+      "country_code": "AR",
+      "country_name": "Argentina",
+      "vat_rate": "21.00",
+      "customs_duty_rate": "50.00",
+      "de_minimis_usd": "50.00",
+      "currency_code": "ARS",
+      "notes": "Impuesto PAIS + IVA + aranceles. Altamente variable.",
+      "is_active": true
+    }
+  },
+  {
+    "model": "search.importtaxrate",
+    "pk": 3,
+    "fields": {
+      "country_code": "MX",
+      "country_name": "Mexico",
+      "vat_rate": "16.00",
+      "customs_duty_rate": "15.00",
+      "de_minimis_usd": "50.00",
+      "currency_code": "MXN",
+      "notes": "IVA 16% + aranceles variables según producto.",
+      "is_active": true
+    }
+  },
+  {
+    "model": "search.importtaxrate",
+    "pk": 4,
+    "fields": {
+      "country_code": "CO",
+      "country_name": "Colombia",
+      "vat_rate": "19.00",
+      "customs_duty_rate": "15.00",
+      "de_minimis_usd": "200.00",
+      "currency_code": "COP",
+      "notes": "IVA 19% + arancel promedio 15%.",
+      "is_active": true
+    }
+  },
+  {
+    "model": "search.importtaxrate",
+    "pk": 5,
+    "fields": {
+      "country_code": "PE",
+      "country_name": "Peru",
+      "vat_rate": "18.00",
+      "customs_duty_rate": "6.00",
+      "de_minimis_usd": "200.00",
+      "currency_code": "PEN",
+      "notes": "IGV 18% + arancel promedio 6%.",
+      "is_active": true
+    }
+  },
+  {
+    "model": "search.importtaxrate",
+    "pk": 6,
+    "fields": {
+      "country_code": "BR",
+      "country_name": "Brazil",
+      "vat_rate": "17.00",
+      "customs_duty_rate": "60.00",
+      "de_minimis_usd": "50.00",
+      "currency_code": "BRL",
+      "notes": "ICMS + II. Importaciones muy gravadas.",
+      "is_active": true
+    }
+  },
+  {
+    "model": "search.importtaxrate",
+    "pk": 7,
+    "fields": {
+      "country_code": "UY",
+      "country_name": "Uruguay",
+      "vat_rate": "22.00",
+      "customs_duty_rate": "20.00",
+      "de_minimis_usd": "200.00",
+      "currency_code": "UYU",
+      "notes": "IVA 22% + aranceles variables.",
+      "is_active": true
+    }
+  },
+  {
+    "model": "search.importtaxrate",
+    "pk": 8,
+    "fields": {
+      "country_code": "EC",
+      "country_name": "Ecuador",
+      "vat_rate": "12.00",
+      "customs_duty_rate": "25.00",
+      "de_minimis_usd": "400.00",
+      "currency_code": "USD",
+      "notes": "IVA 12% + FODINFA + arancel.",
+      "is_active": true
+    }
+  },
+  {
+    "model": "search.importtaxrate",
+    "pk": 9,
+    "fields": {
+      "country_code": "VE",
+      "country_name": "Venezuela",
+      "vat_rate": "16.00",
+      "customs_duty_rate": "20.00",
+      "de_minimis_usd": "100.00",
+      "currency_code": "VES",
+      "notes": "IVA 16% + aranceles. Regulaciones cambiantes.",
+      "is_active": true
+    }
+  },
+  {
+    "model": "search.importtaxrate",
+    "pk": 10,
+    "fields": {
+      "country_code": "BO",
+      "country_name": "Bolivia",
+      "vat_rate": "13.00",
+      "customs_duty_rate": "10.00",
+      "de_minimis_usd": "200.00",
+      "currency_code": "BOB",
+      "notes": "IVA 13% + GA 10%.",
+      "is_active": true
+    }
+  },
+  {
+    "model": "search.importtaxrate",
+    "pk": 11,
+    "fields": {
+      "country_code": "PY",
+      "country_name": "Paraguay",
+      "vat_rate": "10.00",
+      "customs_duty_rate": "10.00",
+      "de_minimis_usd": "100.00",
+      "currency_code": "PYG",
+      "notes": "IVA 10% + arancel.",
+      "is_active": true
+    }
+  },
+  {
+    "model": "search.importtaxrate",
+    "pk": 12,
+    "fields": {
+      "country_code": "CR",
+      "country_name": "Costa Rica",
+      "vat_rate": "13.00",
+      "customs_duty_rate": "14.00",
+      "de_minimis_usd": "50.00",
+      "currency_code": "CRC",
+      "notes": "IVA 13% + DAI promedio.",
+      "is_active": true
+    }
+  },
+  {
+    "model": "search.importtaxrate",
+    "pk": 13,
+    "fields": {
+      "country_code": "PA",
+      "country_name": "Panama",
+      "vat_rate": "7.00",
+      "customs_duty_rate": "10.00",
+      "de_minimis_usd": "100.00",
+      "currency_code": "USD",
+      "notes": "ITBMS 7% + arancel.",
+      "is_active": true
+    }
+  },
+  {
+    "model": "search.importtaxrate",
+    "pk": 14,
+    "fields": {
+      "country_code": "GT",
+      "country_name": "Guatemala",
+      "vat_rate": "12.00",
+      "customs_duty_rate": "15.00",
+      "de_minimis_usd": "100.00",
+      "currency_code": "GTQ",
+      "notes": "IVA 12% + DAI.",
+      "is_active": true
+    }
+  },
+  {
+    "model": "search.importtaxrate",
+    "pk": 15,
+    "fields": {
+      "country_code": "HN",
+      "country_name": "Honduras",
+      "vat_rate": "15.00",
+      "customs_duty_rate": "15.00",
+      "de_minimis_usd": "100.00",
+      "currency_code": "HNL",
+      "notes": "ISV 15% + DAI.",
+      "is_active": true
+    }
+  },
+  {
+    "model": "search.importtaxrate",
+    "pk": 16,
+    "fields": {
+      "country_code": "SV",
+      "country_name": "El Salvador",
+      "vat_rate": "13.00",
+      "customs_duty_rate": "15.00",
+      "de_minimis_usd": "100.00",
+      "currency_code": "USD",
+      "notes": "IVA 13% + DAI.",
+      "is_active": true
+    }
+  },
+  {
+    "model": "search.importtaxrate",
+    "pk": 17,
+    "fields": {
+      "country_code": "NI",
+      "country_name": "Nicaragua",
+      "vat_rate": "15.00",
+      "customs_duty_rate": "15.00",
+      "de_minimis_usd": "100.00",
+      "currency_code": "NIO",
+      "notes": "IVA 15% + DAI.",
+      "is_active": true
+    }
+  },
+  {
+    "model": "search.importtaxrate",
+    "pk": 18,
+    "fields": {
+      "country_code": "DO",
+      "country_name": "Dominican Republic",
+      "vat_rate": "18.00",
+      "customs_duty_rate": "20.00",
+      "de_minimis_usd": "200.00",
+      "currency_code": "DOP",
+      "notes": "ITBIS 18% + aranceles.",
+      "is_active": true
+    }
+  },
+  {
+    "model": "search.importtaxrate",
+    "pk": 19,
+    "fields": {
+      "country_code": "US",
+      "country_name": "United States",
+      "vat_rate": "0.00",
+      "customs_duty_rate": "5.00",
+      "de_minimis_usd": "800.00",
+      "currency_code": "USD",
+      "notes": "No federal VAT. Import duties vary by product.",
+      "is_active": true
+    }
+  },
+  {
+    "model": "search.importtaxrate",
+    "pk": 20,
+    "fields": {
+      "country_code": "ES",
+      "country_name": "Spain",
+      "vat_rate": "21.00",
+      "customs_duty_rate": "4.00",
+      "de_minimis_usd": "150.00",
+      "currency_code": "EUR",
+      "notes": "IVA 21% + aranceles EU.",
+      "is_active": true
+    }
+  },
+  {
+    "model": "search.importtaxrate",
+    "pk": 21,
+    "fields": {
+      "country_code": "DE",
+      "country_name": "Germany",
+      "vat_rate": "19.00",
+      "customs_duty_rate": "4.00",
+      "de_minimis_usd": "150.00",
+      "currency_code": "EUR",
+      "notes": "MwSt 19% + aranceles EU.",
+      "is_active": true
+    }
+  },
+  {
+    "model": "search.importtaxrate",
+    "pk": 22,
+    "fields": {
+      "country_code": "FR",
+      "country_name": "France",
+      "vat_rate": "20.00",
+      "customs_duty_rate": "4.00",
+      "de_minimis_usd": "150.00",
+      "currency_code": "EUR",
+      "notes": "TVA 20% + aranceles EU.",
+      "is_active": true
+    }
+  },
+  {
+    "model": "search.importtaxrate",
+    "pk": 23,
+    "fields": {
+      "country_code": "GB",
+      "country_name": "United Kingdom",
+      "vat_rate": "20.00",
+      "customs_duty_rate": "4.00",
+      "de_minimis_usd": "135.00",
+      "currency_code": "GBP",
+      "notes": "VAT 20% + customs duty.",
+      "is_active": true
+    }
+  },
+  {
+    "model": "search.importtaxrate",
+    "pk": 24,
+    "fields": {
+      "country_code": "CA",
+      "country_name": "Canada",
+      "vat_rate": "5.00",
+      "customs_duty_rate": "8.00",
+      "de_minimis_usd": "20.00",
+      "currency_code": "CAD",
+      "notes": "GST 5% + provincial taxes + duties.",
+      "is_active": true
+    }
+  },
+  {
+    "model": "search.importtaxrate",
+    "pk": 25,
+    "fields": {
+      "country_code": "AU",
+      "country_name": "Australia",
+      "vat_rate": "10.00",
+      "customs_duty_rate": "5.00",
+      "de_minimis_usd": "1000.00",
+      "currency_code": "AUD",
+      "notes": "GST 10% + customs duty. High de minimis.",
+      "is_active": true
+    }
+  }
+]
