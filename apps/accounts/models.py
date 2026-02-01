@@ -1,5 +1,7 @@
 """User models for the accounts application."""
 
+from __future__ import annotations
+
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
@@ -11,7 +13,7 @@ class User(AbstractUser):
     Adds marketplace preferences for the recommendation system.
     """
 
-    preferred_marketplaces: models.JSONField[list[str]] = models.JSONField(
+    preferred_marketplaces = models.JSONField(
         default=list,
         blank=True,
         help_text="List of preferred marketplace IDs (e.g., ['EBAY_US', 'MLC'])",

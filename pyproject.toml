@@ -61,8 +61,7 @@ ignore = [
 "tests/**/*.py" = ["S101", "ARG001", "PLR2004"]
 "**/migrations/*.py" = ["E501"]
 # Django settings pattern: wildcard imports from base settings
-# S104: bind to 0.0.0.0 is acceptable in development
-"core/settings/development.py" = ["F403", "F405", "S104"]
+"core/settings/development.py" = ["F403", "F405"]
 "core/settings/production.py" = ["F403", "F405"]
 "core/settings/test.py" = ["F403", "F405"]
 
