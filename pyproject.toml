@@ -69,6 +69,9 @@ ignore = [
 "apps/**/models.py" = ["RUF012"]
 "apps/**/admin.py" = ["RUF012"]
 "apps/**/forms.py" = ["RUF012"]
+# DRF patterns: serializer Meta classes, viewset permission_classes, unused args required by framework
+"apps/**/serializers.py" = ["RUF012"]
+"apps/**/views.py" = ["RUF012", "ARG002", "TC002"]
 # Gemini service needs lazy import to avoid import errors when google-genai not installed
 "services/gemini/service.py" = ["PLC0415"]
 # Orchestrator uses MarketplaceFactory at runtime (not just for typing)
@@ -137,6 +140,15 @@ module = [
 # See: https://github.com/typeddjango/django-stubs/issues/1097
 disallow_any_generics = false
 
+[[tool.mypy.overrides]]
+module = [
+    "apps.*.serializers",
+    "apps.*.views",
+]
+# DRF serializers and views use generic classes and have dynamic typing
+disallow_any_generics = false
+disable_error_code = ["misc", "override"]
+
 [tool.django-stubs]
 django_settings_module = "core.settings.test"
 
@@ -183,6 +195,8 @@ omit = [
     "core/wsgi.py",
     ".venv/*",
     "htmlcov/*",
+    # Placeholder URLs file not yet in use
+    "apps/search/urls.py",
 ]
 
 [tool.coverage.paths]

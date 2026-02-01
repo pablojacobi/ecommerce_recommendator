@@ -19,7 +19,8 @@ urlpatterns = [
     # Apps
     path("", include("apps.chat.urls", namespace="chat")),
     path("accounts/", include("apps.accounts.urls", namespace="accounts")),
-    path("api/v1/", include("apps.search.urls", namespace="search")),
+    # API
+    path("api/v1/", include("apps.api.urls", namespace="api")),
     # Health check
     path("health/", include("core.health_urls")),
 ]
