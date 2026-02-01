@@ -75,6 +75,8 @@ ignore = [
 "apps/**/views.py" = ["RUF012", "ARG002", "TC002", "PLC0415"]
 # Gemini service needs lazy import to avoid import errors when google-genai not installed
 "services/gemini/service.py" = ["PLC0415"]
+# Tax service needs local imports to avoid circular dependencies with Django models
+"services/taxes/service.py" = ["PLC0415"]
 # Orchestrator uses MarketplaceFactory at runtime (not just for typing)
 "services/search/orchestrator.py" = ["TC001"]
 
