@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}Login - Ecommerce Recommendator{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto">
+    <div class="bg-white shadow-md rounded-lg px-8 pt-6 pb-8 mb-4">
+        <h2 class="text-2xl font-bold text-center text-gray-800 mb-6">Login</h2>
+
+        <form method="post">
+            {% csrf_token %}
+
+            {% if form.errors %}
+                <div class="mb-4 p-3 bg-red-100 text-red-700 rounded-md">
+                    Invalid username or password.
+                </div>
+            {% endif %}
+
+            <div class="mb-4">
+                <label for="{{ form.username.id_for_label }}" class="block text-gray-700 text-sm font-bold mb-2">
+                    Username
+                </label>
+                {{ form.username }}
+            </div>
+
+            <div class="mb-6">
+                <label for="{{ form.password.id_for_label }}" class="block text-gray-700 text-sm font-bold mb-2">
+                    Password
+                </label>
+                {{ form.password }}
+            </div>
+
+            <div class="flex items-center justify-between">
+                <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline w-full">
+                    Sign In
+                </button>
+            </div>
+        </form>
+
+        <p class="text-center text-gray-600 text-sm mt-4">
+            Don't have an account?
+            <a href="{% url 'accounts:register' %}" class="text-indigo-600 hover:text-indigo-800">
+                Register here
+            </a>
+        </p>
+    </div>
+</div>
+
+<style>
+    .form-input {
+        @apply shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline;
+    }
+</style>
+{% endblock %}
