@@ -2,7 +2,13 @@
 
 from __future__ import annotations
 
+import os
+from typing import TYPE_CHECKING
+
 from pydantic import SecretStr
+
+if TYPE_CHECKING:
+    import pytest
 
 from core.config import (
     DatabaseSettings,
@@ -19,8 +25,13 @@ from core.config import (
 class TestDatabaseSettings:
     """Tests for DatabaseSettings."""
 
-    def test_default_values(self) -> None:
+    def test_default_values(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """DatabaseSettings should have sensible defaults."""
+        # Clear any environment variables that could affect defaults
+        for key in list(os.environ.keys()):
+            if key.startswith("DB_"):
+                monkeypatch.delenv(key, raising=False)
+
         settings = DatabaseSettings()
 
         assert settings.name == "ecommerce_recommendator"
