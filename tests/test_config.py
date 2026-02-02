@@ -88,6 +88,16 @@ class TestDatabaseSettings:
         assert "user" in settings.safe_url
         assert "db.example.com" in settings.safe_url
 
+    def test_safe_url_without_password_in_url(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """safe_url should return URL as-is if no password in URL."""
+        database_url = "postgresql://user@db.example.com:5432/mydb"
+        monkeypatch.setenv("DATABASE_URL", database_url)
+
+        settings = DatabaseSettings()
+
+        assert settings.safe_url == database_url
+        assert "***" not in settings.safe_url
+
     def test_safe_url_from_individual_params(self) -> None:
         """safe_url should not include password when built from params."""
         settings = DatabaseSettings(
