@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from functools import lru_cache
 from typing import Literal
+from urllib.parse import urlparse
 
 from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -53,8 +54,6 @@ class DatabaseSettings(BaseSettings):
         """Get database URL without password for logging."""
         if self.url:
             # Parse and redact password from URL
-            from urllib.parse import urlparse
-
             parsed = urlparse(self.url)
             if parsed.password:
                 return self.url.replace(f":{parsed.password}@", ":***@")
