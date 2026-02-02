@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from functools import lru_cache
 from typing import Literal
+from urllib.parse import urlparse
 
 from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -19,6 +20,14 @@ class DatabaseSettings(BaseSettings):
 
     model_config = SettingsConfigDict(env_prefix="DB_")
 
+    # Support both DATABASE_URL and individual parameters
+    url: str | None = Field(
+        default=None,
+        alias="DATABASE_URL",
+        description="Full database URL (takes precedence over individual params)",
+    )
+
+    # Individual parameters (fallback if DATABASE_URL not provided)
     name: str = Field(default="ecommerce_recommendator", description="Database name")
     user: str = Field(default="postgres", description="Database user")
     password: SecretStr = Field(default=SecretStr("postgres"), description="Database password")
@@ -26,8 +35,29 @@ class DatabaseSettings(BaseSettings):
     port: int = Field(default=5432, description="Database port", ge=1, le=65535)
 
     @property
-    def url(self) -> str:
-        """Build database URL (without password for logging)."""
+    def connection_url(self) -> str:
+        """
+        Get database connection URL.
+
+        If DATABASE_URL is set, use it directly.
+        Otherwise, build from individual parameters.
+        """
+        if self.url:
+            return self.url
+        return (
+            f"postgresql://{self.user}:{self.password.get_secret_value()}"
+            f"@{self.host}:{self.port}/{self.name}"
+        )
+
+    @property
+    def safe_url(self) -> str:
+        """Get database URL without password for logging."""
+        if self.url:
+            # Parse and redact password from URL
+            parsed = urlparse(self.url)
+            if parsed.password:
+                return self.url.replace(f":{parsed.password}@", ":***@")
+            return self.url
         return f"postgresql://{self.user}@{self.host}:{self.port}/{self.name}"
 
 

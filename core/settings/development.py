@@ -6,6 +6,8 @@ These settings are used during local development.
 
 import os
 
+import dj_database_url
+
 from .base import *
 
 # SECURITY WARNING: keep the secret key used in production secret!
@@ -19,17 +21,20 @@ DEBUG = True
 
 ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
 
-# Database
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.environ.get("DB_NAME", "ecommerce_recommendator"),
-        "USER": os.environ.get("DB_USER", "postgres"),
-        "PASSWORD": os.environ.get("DB_PASSWORD", "postgres"),
-        "HOST": os.environ.get("DB_HOST", "localhost"),
-        "PORT": os.environ.get("DB_PORT", "5432"),
+# Database - prefer DATABASE_URL, fallback to individual params
+if database_url := os.environ.get("DATABASE_URL"):
+    DATABASES = {"default": dj_database_url.parse(database_url)}
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": os.environ.get("DB_NAME", "ecommerce_recommendator"),
+            "USER": os.environ.get("DB_USER", "postgres"),
+            "PASSWORD": os.environ.get("DB_PASSWORD", "postgres"),
+            "HOST": os.environ.get("DB_HOST", "localhost"),
+            "PORT": os.environ.get("DB_PORT", "5432"),
+        }
     }
-}
 
 CACHES = {
     "default": {

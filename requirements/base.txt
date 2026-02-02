@@ -5,6 +5,7 @@ django-cors-headers>=4.6,<5.0
 
 # Database
 psycopg[binary]>=3.2,<4.0
+dj-database-url>=2.3,<3.0
 
 # Pydantic (settings & validation)
 pydantic>=2.10,<3.0

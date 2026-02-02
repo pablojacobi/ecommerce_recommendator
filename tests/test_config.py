@@ -29,7 +29,7 @@ class TestDatabaseSettings:
         """DatabaseSettings should have sensible defaults."""
         # Clear any environment variables that could affect defaults
         for key in list(os.environ.keys()):
-            if key.startswith("DB_"):
+            if key.startswith("DB_") or key == "DATABASE_URL":
                 monkeypatch.delenv(key, raising=False)
 
         settings = DatabaseSettings()
@@ -38,6 +38,78 @@ class TestDatabaseSettings:
         assert settings.user == "postgres"
         assert settings.host == "localhost"
         assert settings.port == 5432
+        assert settings.url is None
+
+    def test_connection_url_from_individual_params(self) -> None:
+        """connection_url should build URL from individual parameters."""
+        settings = DatabaseSettings(
+            name="testdb",
+            user="testuser",
+            password=SecretStr("testpass"),
+            host="testhost",
+            port=5433,
+        )
+
+        expected = "postgresql://testuser:testpass@testhost:5433/testdb"
+        assert settings.connection_url == expected
+
+    def test_connection_url_from_database_url(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """connection_url should use DATABASE_URL when provided."""
+        database_url = "postgresql://user:pass@db.example.com:5432/mydb"
+        monkeypatch.setenv("DATABASE_URL", database_url)
+
+        settings = DatabaseSettings()
+
+        assert settings.connection_url == database_url
+
+    def test_database_url_takes_precedence(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """DATABASE_URL should take precedence over individual params."""
+        database_url = "postgresql://urluser:urlpass@urlhost:5432/urldb"
+        monkeypatch.setenv("DATABASE_URL", database_url)
+        monkeypatch.setenv("DB_NAME", "paramdb")
+        monkeypatch.setenv("DB_USER", "paramuser")
+
+        settings = DatabaseSettings()
+
+        # Should use DATABASE_URL, not individual params
+        assert settings.connection_url == database_url
+        assert "urldb" in settings.connection_url
+        assert "paramdb" not in settings.connection_url
+
+    def test_safe_url_redacts_password_from_url(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """safe_url should redact password from DATABASE_URL."""
+        database_url = "postgresql://user:secretpass@db.example.com:5432/mydb"
+        monkeypatch.setenv("DATABASE_URL", database_url)
+
+        settings = DatabaseSettings()
+
+        assert "secretpass" not in settings.safe_url
+        assert "***" in settings.safe_url
+        assert "user" in settings.safe_url
+        assert "db.example.com" in settings.safe_url
+
+    def test_safe_url_without_password_in_url(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """safe_url should return URL as-is if no password in URL."""
+        database_url = "postgresql://user@db.example.com:5432/mydb"
+        monkeypatch.setenv("DATABASE_URL", database_url)
+
+        settings = DatabaseSettings()
+
+        assert settings.safe_url == database_url
+        assert "***" not in settings.safe_url
+
+    def test_safe_url_from_individual_params(self) -> None:
+        """safe_url should not include password when built from params."""
+        settings = DatabaseSettings(
+            name="testdb",
+            user="testuser",
+            password=SecretStr("secretpass"),
+            host="testhost",
+            port=5433,
+        )
+
+        assert "secretpass" not in settings.safe_url
+        assert settings.safe_url == "postgresql://testuser@testhost:5433/testdb"
 
     def test_url_property(self) -> None:
         """url property should build correct database URL."""
@@ -48,7 +120,8 @@ class TestDatabaseSettings:
             port=5433,
         )
 
-        assert settings.url == "postgresql://testuser@testhost:5433/testdb"
+        # url is now the raw DATABASE_URL or None
+        assert settings.url is None
 
     def test_password_is_secret(self) -> None:
         """Password should be stored as SecretStr."""
