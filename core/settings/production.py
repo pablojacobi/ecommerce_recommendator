@@ -6,6 +6,8 @@ These settings are used in production (Railway deployment).
 
 import os
 
+import dj_database_url
+
 from .base import *
 
 # SECURITY WARNING: keep the secret key used in production secret!
@@ -15,34 +17,29 @@ DEBUG = False
 
 ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "").split(",")
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.environ.get("DB_NAME", "ecommerce_recommendator"),
-        "USER": os.environ.get("DB_USER"),
-        "PASSWORD": os.environ.get("DB_PASSWORD"),
-        "HOST": os.environ.get("DB_HOST"),
-        "PORT": os.environ.get("DB_PORT", "5432"),
-        "OPTIONS": {
-            "sslmode": "require",
-        },
-    }
-}
-
+# Database - prefer DATABASE_URL (Railway standard), fallback to individual params
 if database_url := os.environ.get("DATABASE_URL"):
-    import urllib.parse
-
-    url = urllib.parse.urlparse(database_url)
-    DATABASES["default"] = {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": url.path[1:],
-        "USER": url.username,
-        "PASSWORD": urllib.parse.unquote(url.password) if url.password else "",
-        "HOST": url.hostname,
-        "PORT": str(url.port or 5432),
-        "OPTIONS": {
-            "sslmode": "require",
-        },
+    DATABASES = {
+        "default": dj_database_url.config(
+            default=database_url,
+            conn_max_age=600,
+            conn_health_checks=True,
+            ssl_require=True,
+        )
+    }
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": os.environ.get("DB_NAME", "ecommerce_recommendator"),
+            "USER": os.environ.get("DB_USER"),
+            "PASSWORD": os.environ.get("DB_PASSWORD"),
+            "HOST": os.environ.get("DB_HOST"),
+            "PORT": os.environ.get("DB_PORT", "5432"),
+            "OPTIONS": {
+                "sslmode": "require",
+            },
+        }
     }
 
 CACHES = {
