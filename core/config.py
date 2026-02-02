@@ -114,23 +114,6 @@ class GeminiSettings(BaseSettings):
         return bool(self.api_key.get_secret_value())
 
 
-class SentrySettings(BaseSettings):
-    """Sentry error tracking settings."""
-
-    model_config = SettingsConfigDict(env_prefix="SENTRY_")
-
-    dsn: str = Field(default="", description="Sentry DSN")
-    environment: str = Field(default="development", description="Sentry environment")
-    traces_sample_rate: float = Field(
-        default=0.1, description="Sentry traces sample rate", ge=0.0, le=1.0
-    )
-
-    @property
-    def is_configured(self) -> bool:
-        """Check if Sentry DSN is configured."""
-        return bool(self.dsn)
-
-
 class Settings(BaseSettings):
     """
     Main application settings.
@@ -165,7 +148,6 @@ class Settings(BaseSettings):
     mercadolibre: MercadoLibreSettings = Field(default_factory=MercadoLibreSettings)
     ebay: EbaySettings = Field(default_factory=EbaySettings)
     gemini: GeminiSettings = Field(default_factory=GeminiSettings)
-    sentry: SentrySettings = Field(default_factory=SentrySettings)
 
     @field_validator("allowed_hosts", mode="before")
     @classmethod

@@ -451,9 +451,6 @@ EBAY_CERT_ID=your-ebay-cert-id
 
 # Google Gemini
 GEMINI_API_KEY=your-gemini-api-key
-
-# Sentry (Optional)
-SENTRY_DSN=your-sentry-dsn
 ```
 
 ### Pydantic Settings
@@ -468,7 +465,6 @@ class Settings(BaseSettings):
     mercadolibre: MercadoLibreSettings
     ebay: EbaySettings
     gemini: GeminiSettings
-    sentry: SentrySettings
 ```
 
 ---
@@ -796,7 +792,7 @@ Actualizaciones automáticas de seguridad:
 2. **Environment Parity**: Dev/Prod similares
 3. **12-Factor App**: Metodología aplicada
 4. **CI/CD**: Pipeline completo con gates
-5. **Monitoring**: Structured logging + Sentry
+5. **Monitoring**: Structured logging
 6. **Health Checks**: Endpoint `/health/`
 
 ---

@@ -16,7 +16,6 @@ from core.config import (
     GeminiSettings,
     MercadoLibreSettings,
     RedisSettings,
-    SentrySettings,
     Settings,
     get_settings,
 )
@@ -213,30 +212,6 @@ class TestGeminiSettings:
         assert settings.is_configured is True
 
 
-class TestSentrySettings:
-    """Tests for SentrySettings."""
-
-    def test_default_values(self) -> None:
-        """SentrySettings should have sensible defaults."""
-        settings = SentrySettings()
-
-        assert settings.dsn == ""
-        assert settings.environment == "development"
-        assert settings.traces_sample_rate == 0.1
-
-    def test_is_configured_false_when_no_dsn(self) -> None:
-        """is_configured should return False when DSN is empty."""
-        settings = SentrySettings()
-
-        assert settings.is_configured is False
-
-    def test_is_configured_true_when_dsn_set(self) -> None:
-        """is_configured should return True when DSN is set."""
-        settings = SentrySettings(dsn="https://sentry.io/123")
-
-        assert settings.is_configured is True
-
-
 class TestSettings:
     """Tests for main Settings class."""
 
@@ -290,7 +265,6 @@ class TestSettings:
         assert isinstance(settings.mercadolibre, MercadoLibreSettings)
         assert isinstance(settings.ebay, EbaySettings)
         assert isinstance(settings.gemini, GeminiSettings)
-        assert isinstance(settings.sentry, SentrySettings)
 
 
 class TestGetSettings:

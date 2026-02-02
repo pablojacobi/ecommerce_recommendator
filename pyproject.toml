@@ -119,7 +119,6 @@ module = [
     "respx.*",
     "structlog.*",
     "tenacity.*",
-    "sentry_sdk.*",
     "debug_toolbar.*",
     "google",
     "google.genai",
