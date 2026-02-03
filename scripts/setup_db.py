@@ -84,8 +84,16 @@ def create_schema_raw(force_recreate: bool = False) -> None:
 
 
 def setup_django() -> None:
-    """Setup Django."""
-    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "core.settings.development")
+    """Setup Django with appropriate settings based on environment."""
+    environment = os.environ.get("ENVIRONMENT", "development")
+    
+    if environment == "production":
+        settings_module = "core.settings.production"
+    else:
+        settings_module = "core.settings.development"
+    
+    os.environ.setdefault("DJANGO_SETTINGS_MODULE", settings_module)
+    print(f"Using Django settings: {settings_module}")
 
     import django
 
@@ -102,12 +110,21 @@ def run_migrations() -> None:
 
 
 def load_fixtures() -> None:
-    """Load initial data fixtures."""
+    """Load initial data fixtures (idempotent - safe to run multiple times)."""
     from django.core.management import call_command
+    from django.db import IntegrityError
 
     print("\nLoading fixtures...")
-    call_command("loaddata", "marketplaces", verbosity=1)
-    call_command("loaddata", "import_tax_rates", verbosity=1)
+    try:
+        call_command("loaddata", "marketplaces", verbosity=1)
+    except IntegrityError:
+        print("  Marketplaces already loaded, skipping.")
+    
+    try:
+        call_command("loaddata", "import_tax_rates", verbosity=1)
+    except IntegrityError:
+        print("  Import tax rates already loaded, skipping.")
+    
     print("Fixtures loaded.")
 
 
