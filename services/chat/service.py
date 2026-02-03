@@ -262,7 +262,7 @@ class ChatService:
             condition = filters["condition"]
         if "free_shipping" in filters and filters["free_shipping"]:
             require_free_shipping = True
-        
+
         # Handle seller rating filter
         min_seller_rating = previous_intent.min_seller_rating
         if "min_seller_rating" in filters:
@@ -275,7 +275,7 @@ class ChatService:
             "newest": SortOrder.NEWEST,
             "rating_desc": SortOrder.BEST_SELLER,
         }
-        
+
         if refinement.sort_preference:
             new_sort = sort_mapping.get(refinement.sort_preference)
             if new_sort:
@@ -398,7 +398,7 @@ class ChatService:
         from decimal import Decimal
         from services.gemini.types import SearchIntent
         from services.marketplaces.base import SortOrder
-        
+
         context = ConversationContext(
             selected_marketplaces=list(request.marketplace_codes),
         )
@@ -406,7 +406,7 @@ class ChatService:
         # Add conversation history and find the last search intent
         last_search_params = None
         results_count = 0
-        
+
         for msg in request.conversation_history:
             if msg.get("role") == "user":
                 context.add_user_message(msg.get("content", ""))
@@ -427,12 +427,12 @@ class ChatService:
                 "newest": SortOrder.NEWEST,
                 "best_seller": SortOrder.BEST_SELLER,
             }
-            
+
             sort_criteria = tuple(
                 sort_mapping[s] for s in last_search_params.get("sort_criteria", [])
                 if s in sort_mapping
             )
-            
+
             context.last_search_intent = SearchIntent(
                 query=last_search_params.get("query", ""),
                 original_query=last_search_params.get("original_query", ""),
@@ -447,7 +447,7 @@ class ChatService:
                 meli_category_id=last_search_params.get("meli_category_id"),
             )
             context.last_results_count = results_count
-            
+
             logger.debug(
                 "Reconstructed search context",
                 query=context.last_search_intent.query,
@@ -461,33 +461,51 @@ class ChatService:
         query: str,
         results: AggregatedResult,
     ) -> str:
-        """Format a search response message."""
+        """Format a search response message in user's language."""
+        is_spanish = self._is_spanish(self._current_user_content)
+        
         if not results.products:
             failed = results.failed_marketplaces
             if failed:
+                if is_spanish:
+                    return (
+                        f"No encontré resultados para '{query}'. "
+                        f"Algunos marketplaces tuvieron problemas: {', '.join(failed)}. "
+                        "¿Quieres intentar con otros términos?"
+                    )
+                return (
+                    f"I couldn't find results for '{query}'. "
+                    f"Some marketplaces had issues: {', '.join(failed)}. "
+                    "Would you like to try different search terms?"
+                )
+            if is_spanish:
                 return (
                     f"No encontré resultados para '{query}'. "
-                    f"Algunos marketplaces tuvieron problemas: {', '.join(failed)}. "
-                    "¿Quieres intentar con otros términos?"
+                    "¿Quieres intentar con otros términos de búsqueda?"
                 )
             return (
-                f"No encontré resultados para '{query}'. "
-                "¿Quieres intentar con otros términos de búsqueda?"
+                f"I couldn't find results for '{query}'. "
+                "Would you like to try different search terms?"
             )
 
         count = len(results.products)
         total = results.total_count
         marketplaces = results.successful_marketplaces
 
-        response_parts = [f"Encontré {count} productos para '{query}'"]
-
-        if total > count:
-            response_parts.append(f" (de {total} disponibles)")
-
-        response_parts.append(f" en {marketplaces} marketplace{'s' if marketplaces > 1 else ''}.")
-
-        if results.has_more:
-            response_parts.append(" Si quieres ver más resultados, solo dímelo.")
+        if is_spanish:
+            response_parts = [f"Encontré {count} productos para '{query}'"]
+            if total > count:
+                response_parts.append(f" (de {total} disponibles)")
+            response_parts.append(f" en {marketplaces} marketplace{'s' if marketplaces > 1 else ''}.")
+            if results.has_more:
+                response_parts.append(" Si quieres ver más resultados, solo dímelo.")
+        else:
+            response_parts = [f"Found {count} products for '{query}'"]
+            if total > count:
+                response_parts.append(f" (out of {total} available)")
+            response_parts.append(f" in {marketplaces} marketplace{'s' if marketplaces > 1 else ''}.")
+            if results.has_more:
+                response_parts.append(" Let me know if you want to see more results.")
 
         # Add best price highlight if available
         best_price_product = next(
@@ -501,16 +519,26 @@ class ChatService:
             # Add tax info if available
             if best_price_product.tax_info:
                 tax_info = best_price_product.tax_info
-                price_text = (
-                    f"{product.currency} {product.price:,.0f} "
-                    f"(+ USD {tax_info.total_taxes:,.2f} impuestos = "
-                    f"USD {tax_info.total_with_taxes:,.2f} total)"
-                )
-                if tax_info.de_minimis_applied:
-                    price_text += " [exento de impuestos]"
+                if is_spanish:
+                    price_text = (
+                        f"{product.currency} {product.price:,.0f} "
+                        f"(+ USD {tax_info.total_taxes:,.2f} impuestos = "
+                        f"USD {tax_info.total_with_taxes:,.2f} total)"
+                    )
+                    if tax_info.de_minimis_applied:
+                        price_text += " [exento de impuestos]"
+                else:
+                    price_text = (
+                        f"{product.currency} {product.price:,.0f} "
+                        f"(+ USD {tax_info.total_taxes:,.2f} taxes = "
+                        f"USD {tax_info.total_with_taxes:,.2f} total)"
+                    )
+                    if tax_info.de_minimis_applied:
+                        price_text += " [tax exempt]"
 
+            best_label = "Mejor precio" if is_spanish else "Best price"
             response_parts.append(
-                f"\n\n💰 Mejor precio: {product.title[:50]}... "
+                f"\n\n💰 {best_label}: {product.title[:50]}... "
                 f"a {price_text} "
                 f"en {best_price_product.marketplace_name}."
             )
@@ -526,7 +554,7 @@ class ChatService:
         self, spanish_msg: str, english_msg: str | None = None
     ) -> ChatResponse:
         """Create an error response in the user's language.
-        
+
         Args:
             spanish_msg: Message in Spanish (used if user wrote in Spanish)
             english_msg: Message in English (used otherwise, defaults to english if not provided)
@@ -534,10 +562,10 @@ class ChatService:
         # Default to English if no english message provided
         if english_msg is None:
             english_msg = spanish_msg  # Fallback
-        
+
         # Choose message based on user's language
         message = spanish_msg if self._is_spanish(self._current_user_content) else english_msg
-        
+
         return ChatResponse(
             message=message,
             error=message,
