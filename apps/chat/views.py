@@ -141,13 +141,6 @@ def send_message(request: HttpRequest) -> HttpResponse:
         content=message_text,
     )
 
-    # Render user message HTML
-    user_message_html = render_to_string(
-        "chat/partials/user_message.html",
-        {"message": message_text},
-        request=request,
-    )
-
     # Process with ChatService
     try:
         response_data = _process_chat(
@@ -211,7 +204,8 @@ def send_message(request: HttpRequest) -> HttpResponse:
             request=request,
         )
 
-    return HttpResponse(user_message_html + assistant_message_html)
+    # Only return assistant message - user message was already added by JavaScript
+    return HttpResponse(assistant_message_html)
 
 
 def _make_json_serializable(obj):
