@@ -43,7 +43,7 @@ class Conversation(models.Model):
     class Meta:
         """Meta options for Conversation model."""
 
-        db_table = "conversations"
+        db_table = "ecommerce_conversations"
         ordering = ["-updated_at"]
         verbose_name = "Conversation"
         verbose_name_plural = "Conversations"
@@ -101,7 +101,7 @@ class Message(models.Model):
     class Meta:
         """Meta options for Message model."""
 
-        db_table = "messages"
+        db_table = "ecommerce_messages"
         ordering = ["created_at"]
         verbose_name = "Message"
         verbose_name_plural = "Messages"

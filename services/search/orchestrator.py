@@ -10,6 +10,7 @@ from core.logging import get_logger
 from core.result import Failure, Result, Success, failure, success
 from services.marketplaces.base import MarketplaceAdapter, SearchParams, SortOrder
 from services.marketplaces.factory import MarketplaceFactory
+from services.search.relevance import filter_relevant_products, filter_relevant_products_async
 from services.search.types import (
     AggregatedResult,
     EnrichedProduct,
@@ -48,6 +49,7 @@ class SearchOrchestrator:
         factory: MarketplaceFactory,
         default_timeout: float = 30.0,
         tax_calculator: TaxCalculatorService | None = None,
+        gemini_client=None,
     ) -> None:
         """
         Initialize the orchestrator.
@@ -56,11 +58,13 @@ class SearchOrchestrator:
             factory: Factory for creating marketplace adapters.
             default_timeout: Default timeout for searches in seconds.
             tax_calculator: Optional tax calculator for import tax estimation.
+            gemini_client: Optional Gemini client for AI-powered filtering.
         """
         self._factory = factory
         self._default_timeout = default_timeout
         self._tax_calculator = tax_calculator or TaxCalculatorService()
         self._adapters: dict[str, MarketplaceAdapter] = {}
+        self._gemini_client = gemini_client
 
     async def search(
         self,
@@ -81,14 +85,24 @@ class SearchOrchestrator:
         intent = request.intent
 
         # Build search params from intent
+        # IMPORTANT: Always use RELEVANCE (BEST_MATCH) for API call to avoid
+        # getting virtual/digital items that are sorted first by price.
+        # We'll sort locally after filtering irrelevant results.
+        # Also request more results to have enough after filtering.
+        api_limit = min(intent.limit * 3, 100)  # Request 3x more, max 100
+
         params = SearchParams(
             query=intent.query,
-            sort=intent.sort_order or SortOrder.RELEVANCE,
-            limit=intent.limit,
+            sort=SortOrder.RELEVANCE,  # Always BEST_MATCH for API
+            limit=api_limit,
             offset=0,
             min_price=intent.min_price,
             max_price=intent.max_price,
+            category_id=intent.ebay_category_id,
         )
+
+        # Store the user's desired sort criteria for later local sorting
+        sort_criteria = intent.sort_criteria
 
         # Create adapters for requested marketplaces
         adapters = self._get_adapters(request.marketplace_codes)
@@ -103,16 +117,23 @@ class SearchOrchestrator:
         # Execute searches in parallel
         marketplace_results = await self._search_all(adapters, params)
 
-        # Aggregate and sort results
-        aggregated = self._aggregate_results(
+        # Aggregate, filter, and sort results
+        aggregated = await self._aggregate_results(
             marketplace_results,
-            sort_order=intent.sort_order,
+            sort_criteria=sort_criteria,  # Supports N sort criteria
             query=intent.query,
+            original_query=intent.original_query,
+            limit=intent.limit,  # Limit to user's requested count after filtering
+            min_seller_rating=intent.min_seller_rating,
         )
 
-        # Calculate import taxes if destination country specified
+        # Calculate import taxes if destination country specified (use sync_to_async for DB access)
         if request.destination_country:
-            self._calculate_taxes(aggregated.products, request.destination_country)
+            from asgiref.sync import sync_to_async
+
+            await sync_to_async(self._calculate_taxes)(
+                aggregated.products, request.destination_country
+            )
 
         # Mark best prices (consider taxes if available)
         self._mark_best_prices(aggregated.products)
@@ -227,11 +248,14 @@ class SearchOrchestrator:
                 error=str(e),
             )
 
-    def _aggregate_results(
+    async def _aggregate_results(
         self,
         marketplace_results: list[MarketplaceSearchResult],
-        sort_order: SortOrder | None,
+        sort_criteria: tuple[SortOrder, ...],
         query: str,
+        original_query: str = "",
+        limit: int = 20,
+        min_seller_rating: float | None = None,
     ) -> AggregatedResult:
         """Aggregate results from multiple marketplaces."""
         all_products: list[EnrichedProduct] = []
@@ -244,14 +268,60 @@ class SearchOrchestrator:
                 total_count += result.total_count
                 has_more = has_more or result.has_more
 
-        # Sort aggregated results
-        sorted_products = self._sort_products(all_products, sort_order)
+        # Filter out irrelevant products using AI if available
+        original_count = len(all_products)
+
+        if self._gemini_client is not None:
+            # Use AI-powered filtering
+            filtered_products = await filter_relevant_products_async(
+                products=all_products,
+                search_query=query,
+                original_query=original_query or query,
+                gemini_client=self._gemini_client,
+            )
+        else:
+            # Fall back to basic filtering
+            filtered_products = filter_relevant_products(
+                products=all_products,
+                search_query=query,
+                original_query=original_query or query,
+            )
+
+        if len(filtered_products) < original_count:
+            logger.info(
+                "Filtered irrelevant products",
+                original=original_count,
+                filtered=len(filtered_products),
+                removed=original_count - len(filtered_products),
+            )
+
+        # Filter by seller rating if specified
+        if min_seller_rating is not None:
+            before_rating_filter = len(filtered_products)
+            filtered_products = [
+                p for p in filtered_products
+                if p.product.seller_rating is not None and p.product.seller_rating >= min_seller_rating
+            ]
+            if len(filtered_products) < before_rating_filter:
+                logger.info(
+                    "Filtered by seller rating",
+                    min_rating=min_seller_rating,
+                    before=before_rating_filter,
+                    after=len(filtered_products),
+                )
+
+        # Sort aggregated results by user's preference (supports N criteria)
+        sorted_products = self._sort_products(filtered_products, sort_criteria)
+
+        # Limit to user's requested count
+        limited_products = sorted_products[:limit]
+        has_more = has_more or len(sorted_products) > limit
 
         return AggregatedResult(
-            products=sorted_products,
+            products=limited_products,
             marketplace_results=marketplace_results,
-            total_count=total_count,
-            sort_order=sort_order,
+            total_count=len(filtered_products),  # Total after filter
+            sort_order=sort_criteria[0] if sort_criteria else None,
             query=query,
             has_more=has_more,
         )
@@ -259,29 +329,64 @@ class SearchOrchestrator:
     def _sort_products(
         self,
         products: list[EnrichedProduct],
-        sort_order: SortOrder | None,
+        sort_criteria: tuple[SortOrder, ...],
     ) -> list[EnrichedProduct]:
-        """Sort products according to sort order."""
+        """
+        Sort products according to N sort criteria.
+        
+        Uses Python's stable sort: applies sorts in REVERSE order (last to first).
+        This ensures that the primary criterion (first in list) takes precedence,
+        while subsequent criteria act as tie-breakers.
+        
+        Example: sort_criteria = (PRICE_ASC, BEST_SELLER, NEWEST)
+        - First sorts by NEWEST
+        - Then by BEST_SELLER (preserving NEWEST order for ties)
+        - Finally by PRICE_ASC (preserving previous order for ties)
+        
+        Result: Products ordered by price, with same-price items ordered by
+        seller rating, and same-rating items ordered by recency.
+        """
         if not products:
             return products
 
+        result = list(products)
+        
+        # Apply sorts in reverse order (last criterion first)
+        for sort_order in reversed(sort_criteria):
+            result = self._apply_single_sort(result, sort_order)
+        
+        # If no criteria specified, use relevance (interleave)
+        if not sort_criteria:
+            result = self._interleave_results(result)
+        
+        return result
+    
+    def _apply_single_sort(
+        self,
+        products: list[EnrichedProduct],
+        sort_order: SortOrder | None,
+    ) -> list[EnrichedProduct]:
+        """Apply a single sort criterion to products."""
         if sort_order == SortOrder.PRICE_ASC:
             return sorted(products, key=lambda p: p.product.price)
         elif sort_order == SortOrder.PRICE_DESC:
             return sorted(products, key=lambda p: p.product.price, reverse=True)
         elif sort_order == SortOrder.NEWEST:
-            # For newest, maintain marketplace order (APIs already sort by date)
+            # For newest, maintain current order (APIs already sort by date)
             return products
         elif sort_order == SortOrder.BEST_SELLER:
-            # Sort by seller rating as proxy for popularity
+            # Sort by seller rating (higher = better)
             return sorted(
                 products,
                 key=lambda p: p.product.seller_rating or 0,
                 reverse=True,
             )
-        else:
-            # RELEVANCE or None: interleave results from different marketplaces
+        elif sort_order == SortOrder.RELEVANCE:
+            # Relevance: interleave results from different marketplaces
             return self._interleave_results(products)
+        else:
+            # Unknown: maintain current order
+            return products
 
     def _interleave_results(
         self,
@@ -362,6 +467,8 @@ class SearchOrchestrator:
         if isinstance(result, Success):
             breakdown: TaxBreakdown = result.value
             return TaxInfo(
+                product_price_usd=breakdown.product_price_usd,
+                shipping_cost_usd=breakdown.shipping_cost_usd,
                 customs_duty=breakdown.customs_duty,
                 vat=breakdown.vat,
                 total_taxes=breakdown.total_taxes,

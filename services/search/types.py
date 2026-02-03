@@ -35,6 +35,8 @@ class TaxInfo:
     Tax information for a product.
 
     Attributes:
+        product_price_usd: Product price in USD.
+        shipping_cost_usd: Shipping cost in USD.
         customs_duty: Customs/import duty in USD.
         vat: VAT/IVA tax in USD.
         total_taxes: Sum of all taxes in USD.
@@ -46,6 +48,8 @@ class TaxInfo:
         notes: Additional notes about taxes.
     """
 
+    product_price_usd: Decimal
+    shipping_cost_usd: Decimal
     customs_duty: Decimal
     vat: Decimal
     total_taxes: Decimal

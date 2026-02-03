@@ -59,12 +59,12 @@ class ImportTaxRate(models.Model):
         default=True,
         help_text="Whether this tax rate is currently active",
     )
-    updated_at = models.DateTimeField(auto_now=True)
+    updated_at = models.DateTimeField(auto_now=True, null=True, blank=True)
 
     class Meta:
         """Meta options for ImportTaxRate model."""
 
-        db_table = "import_tax_rates"
+        db_table = "ecommerce_import_tax_rates"
         ordering = ["country_name"]
         verbose_name = "Import Tax Rate"
         verbose_name_plural = "Import Tax Rates"
@@ -175,7 +175,7 @@ class Marketplace(models.Model):
     class Meta:
         """Meta options for Marketplace model."""
 
-        db_table = "marketplaces"
+        db_table = "ecommerce_marketplaces"
         ordering = ["display_order", "name"]
         verbose_name = "Marketplace"
         verbose_name_plural = "Marketplaces"

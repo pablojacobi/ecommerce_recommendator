@@ -35,6 +35,7 @@ class SearchParams:
         max_price: Maximum price filter (optional).
         limit: Maximum number of results to return.
         offset: Number of results to skip (for pagination).
+        category_id: Marketplace-specific category ID for filtering.
     """
 
     query: str
@@ -43,6 +44,7 @@ class SearchParams:
     max_price: Decimal | None = None
     limit: int = 20
     offset: int = 0
+    category_id: str | None = None
 
     def __post_init__(self) -> None:
         """Validate search parameters."""

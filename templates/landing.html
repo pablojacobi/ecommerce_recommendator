@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ecommerce Recommendator - AI Shopping Assistant</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="h-full">
+<div class="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-800">
+  <!-- Header -->
+  <nav class="bg-transparent">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div class="flex justify-between items-center">
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 bg-white/10 backdrop-blur rounded-lg flex items-center justify-center">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
+            </svg>
+          </div>
+          <span class="text-2xl font-bold text-white">Ecommerce Recommendator</span>
+        </div>
+        <a href="{% url 'accounts:login' %}" class="px-6 py-2 bg-white text-indigo-900 rounded-lg font-semibold hover:bg-gray-100 transition-colors">Sign In</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-32">
+    <div class="grid lg:grid-cols-2 gap-16 items-center">
+      <!-- Left: Text Content -->
+      <div class="text-center lg:text-left">
+        <h1 class="text-5xl lg:text-6xl font-extrabold text-white leading-tight mb-6">
+          Find the Best Products with
+          <span class="text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-yellow-400">
+            AI-Powered Search
+          </span>
+        </h1>
+        <p class="text-xl text-gray-300 mb-8 max-w-lg mx-auto lg:mx-0">
+          Search across eBay and MercadoLibre using natural language. Get intelligent recommendations, price comparisons, and import tax calculations for international shipping.
+        </p>
+
+        <div class="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mb-12">
+          <a href="{% url 'accounts:login' %}" class="px-8 py-4 bg-gradient-to-r from-pink-500 to-orange-400 text-white rounded-xl font-bold text-lg hover:from-pink-600 hover:to-orange-500 transition-all transform hover:scale-105 shadow-lg text-center">
+            Get Started
+            <svg class="w-5 h-5 inline ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+            </svg>
+          </a>
+          <a href="https://github.com/pablojacobi/ecommerce_recommendator" target="_blank" class="px-8 py-4 bg-white/10 backdrop-blur text-white rounded-xl font-bold text-lg hover:bg-white/20 transition-all border border-white/20 text-center">
+            <svg class="w-5 h-5 inline mr-2" fill="currentColor" viewBox="0 0 24 24">
+              <path fill-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clip-rule="evenodd"></path>
+            </svg>
+            View on GitHub
+          </a>
+        </div>
+
+        <!-- Trust badges -->
+        <div class="flex flex-wrap gap-4 justify-center lg:justify-start text-sm text-gray-400">
+          <span class="flex items-center gap-2">
+            <svg class="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+            </svg>
+            Multi-Marketplace Search
+          </span>
+          <span class="flex items-center gap-2">
+            <svg class="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+            </svg>
+            Import Tax Calculator
+          </span>
+          <span class="flex items-center gap-2">
+            <svg class="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+            </svg>
+            AI-Powered Recommendations
+          </span>
+        </div>
+      </div>
+
+      <!-- Right: Chat Preview -->
+      <div class="relative">
+        <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20 shadow-2xl">
+          <div class="flex items-center gap-2 mb-4 pb-4 border-b border-white/10">
+            <div class="w-3 h-3 rounded-full bg-red-400"></div>
+            <div class="w-3 h-3 rounded-full bg-yellow-400"></div>
+            <div class="w-3 h-3 rounded-full bg-green-400"></div>
+            <span class="ml-3 text-gray-400 text-sm">Shopping Assistant</span>
+          </div>
+
+          <div class="space-y-4">
+            <div class="flex gap-3">
+              <div class="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center text-white text-sm font-bold">U</div>
+              <div class="flex-1 bg-white/10 rounded-lg p-3 text-white">
+                Find me a laptop for gaming under $1500 that ships to Chile
+              </div>
+            </div>
+
+            <div class="flex gap-3">
+              <div class="w-8 h-8 rounded-full bg-gradient-to-r from-pink-500 to-orange-400 flex items-center justify-center text-white text-sm font-bold">AI</div>
+              <div class="flex-1 bg-white/5 rounded-lg p-3 text-gray-200">
+                <p class="mb-2">Found 5 options from eBay and MercadoLibre:</p>
+                <ul class="text-sm space-y-1 text-gray-300">
+                  <li>• ASUS TUF Gaming - $1,299 + $89 shipping</li>
+                  <li>• Lenovo IdeaPad Gaming 3 - $899 (MLC)</li>
+                  <li>• MSI GF63 Thin - $1,049 + tax estimate</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Floating elements -->
+        <div class="absolute -top-4 -right-4 w-20 h-20 bg-pink-500/30 rounded-full blur-xl"></div>
+        <div class="absolute -bottom-4 -left-4 w-32 h-32 bg-indigo-500/30 rounded-full blur-xl"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Example Queries Section -->
+  <div class="bg-black/20 py-20">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <h2 class="text-3xl font-bold text-white text-center mb-12">Try asking questions like...</h2>
+
+      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div class="bg-white/5 backdrop-blur rounded-xl p-6 border border-white/10 hover:bg-white/10 transition-colors">
+          <div class="text-pink-400 font-mono text-sm mb-2">Price Comparison</div>
+          <p class="text-white">"Find the cheapest iPhone 15 between eBay and MercadoLibre Chile"</p>
+        </div>
+
+        <div class="bg-white/5 backdrop-blur rounded-xl p-6 border border-white/10 hover:bg-white/10 transition-colors">
+          <div class="text-yellow-400 font-mono text-sm mb-2">Specifications</div>
+          <p class="text-white">"Laptop with RTX 4060 and 32GB RAM under $2000"</p>
+        </div>
+
+        <div class="bg-white/5 backdrop-blur rounded-xl p-6 border border-white/10 hover:bg-white/10 transition-colors">
+          <div class="text-green-400 font-mono text-sm mb-2">Import Costs</div>
+          <p class="text-white">"Show me PS5 prices with shipping and taxes to Argentina"</p>
+        </div>
+
+        <div class="bg-white/5 backdrop-blur rounded-xl p-6 border border-white/10 hover:bg-white/10 transition-colors">
+          <div class="text-blue-400 font-mono text-sm mb-2">Quality Filter</div>
+          <p class="text-white">"Best rated headphones from sellers with good reputation"</p>
+        </div>
+
+        <div class="bg-white/5 backdrop-blur rounded-xl p-6 border border-white/10 hover:bg-white/10 transition-colors">
+          <div class="text-purple-400 font-mono text-sm mb-2">Multi-criteria</div>
+          <p class="text-white">"Vacuum cleaner 1600W, cheapest option with free shipping"</p>
+        </div>
+
+        <div class="bg-white/5 backdrop-blur rounded-xl p-6 border border-white/10 hover:bg-white/10 transition-colors">
+          <div class="text-orange-400 font-mono text-sm mb-2">Conversational</div>
+          <p class="text-white">"From those results, show me only the ones with warranty"</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tech Stack Section -->
+  <div class="py-20">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      <h2 class="text-3xl font-bold text-white mb-4">Built with Modern Technology</h2>
+      <p class="text-gray-400 mb-12 max-w-2xl mx-auto">
+        A full-stack implementation showcasing clean architecture, design patterns, and multi-marketplace API integration with AI-powered search.
+      </p>
+
+      <div class="flex flex-wrap justify-center gap-8 text-gray-300">
+        <div class="flex flex-col items-center">
+          <div class="w-16 h-16 bg-white/10 rounded-xl flex items-center justify-center mb-2">
+            <span class="text-2xl">🐍</span>
+          </div>
+          <span>Django 5 + DRF</span>
+        </div>
+        <div class="flex flex-col items-center">
+          <div class="w-16 h-16 bg-white/10 rounded-xl flex items-center justify-center mb-2">
+            <span class="text-2xl">🐘</span>
+          </div>
+          <span>PostgreSQL</span>
+        </div>
+        <div class="flex flex-col items-center">
+          <div class="w-16 h-16 bg-white/10 rounded-xl flex items-center justify-center mb-2">
+            <span class="text-2xl">✨</span>
+          </div>
+          <span>Google Gemini 2.0</span>
+        </div>
+        <div class="flex flex-col items-center">
+          <div class="w-16 h-16 bg-white/10 rounded-xl flex items-center justify-center mb-2">
+            <span class="text-2xl">🛒</span>
+          </div>
+          <span>eBay + MercadoLibre APIs</span>
+        </div>
+        <div class="flex flex-col items-center">
+          <div class="w-16 h-16 bg-white/10 rounded-xl flex items-center justify-center mb-2">
+            <span class="text-2xl">⚡</span>
+          </div>
+          <span>HTMX + Tailwind</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Features Section -->
+  <div class="bg-black/20 py-20">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <h2 class="text-3xl font-bold text-white text-center mb-12">Key Features</h2>
+
+      <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div class="bg-white/5 backdrop-blur rounded-xl p-6 border border-white/10">
+          <div class="w-12 h-12 bg-pink-500/20 rounded-lg flex items-center justify-center mb-4">
+            <svg class="w-6 h-6 text-pink-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+            </svg>
+          </div>
+          <h3 class="text-white font-semibold mb-2">Multi-Marketplace</h3>
+          <p class="text-gray-400 text-sm">Search eBay US and 18+ MercadoLibre countries simultaneously</p>
+        </div>
+
+        <div class="bg-white/5 backdrop-blur rounded-xl p-6 border border-white/10">
+          <div class="w-12 h-12 bg-yellow-500/20 rounded-lg flex items-center justify-center mb-4">
+            <svg class="w-6 h-6 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+            </svg>
+          </div>
+          <h3 class="text-white font-semibold mb-2">Tax Calculator</h3>
+          <p class="text-gray-400 text-sm">Estimate import taxes, VAT, and customs duty for 25+ countries</p>
+        </div>
+
+        <div class="bg-white/5 backdrop-blur rounded-xl p-6 border border-white/10">
+          <div class="w-12 h-12 bg-green-500/20 rounded-lg flex items-center justify-center mb-4">
+            <svg class="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+            </svg>
+          </div>
+          <h3 class="text-white font-semibold mb-2">Conversational AI</h3>
+          <p class="text-gray-400 text-sm">Refine searches naturally: "From those, show cheaper ones"</p>
+        </div>
+
+        <div class="bg-white/5 backdrop-blur rounded-xl p-6 border border-white/10">
+          <div class="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center mb-4">
+            <svg class="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+            </svg>
+          </div>
+          <h3 class="text-white font-semibold mb-2">Quality Focused</h3>
+          <p class="text-gray-400 text-sm">100% test coverage, design patterns, and clean architecture</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="border-t border-white/10 py-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-gray-400 text-sm">
+      <p>Ecommerce Recommendator - A portfolio project by Pablo Jacobi</p>
+      <p class="mt-2">
+        <a href="https://github.com/pablojacobi/ecommerce_recommendator" class="hover:text-white transition-colors">GitHub Repository</a>
+        •
+        <span>Full implementation details in README</span>
+      </p>
+    </div>
+  </footer>
+</div>
+</body>
+</html>

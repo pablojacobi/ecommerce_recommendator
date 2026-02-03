@@ -22,7 +22,7 @@ class User(AbstractUser):
     class Meta:
         """Meta options for User model."""
 
-        db_table = "users"
+        db_table = "ecommerce_users"
         verbose_name = "User"
         verbose_name_plural = "Users"
 

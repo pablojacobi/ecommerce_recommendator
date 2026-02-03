@@ -325,6 +325,7 @@ class EbayClient:
         offset: int = 0,
         min_price: float | None = None,
         max_price: float | None = None,
+        category_id: str | None = None,
     ) -> Result[dict[str, Any], MarketplaceError]:
         """
         Search for items using eBay Browse API.
@@ -336,6 +337,7 @@ class EbayClient:
             offset: Results offset for pagination.
             min_price: Minimum price filter.
             max_price: Maximum price filter.
+            category_id: eBay category ID to filter results.
 
         Returns:
             Result containing search response or MarketplaceError.
@@ -346,6 +348,10 @@ class EbayClient:
             "offset": offset,
             "sort": sort,
         }
+
+        # Add category filter - this is crucial for getting relevant results
+        if category_id:
+            params["category_ids"] = category_id
 
         # Add price filters
         filters = []
@@ -363,6 +369,7 @@ class EbayClient:
             "Searching eBay",
             marketplace_id=self.marketplace_id,
             query=query,
+            category_id=category_id,
             params=params,
         )
 

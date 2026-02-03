@@ -7,7 +7,6 @@ services:
     build:
       context: .
       target: development
-    container_name: ecommerce_web
     env_file:
       - .env
     environment:

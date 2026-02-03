@@ -78,7 +78,7 @@ class EbayAdapter:
         min_price = float(params.min_price) if params.min_price is not None else None
         max_price = float(params.max_price) if params.max_price is not None else None
 
-        # Make API call
+        # Make API call with category filter
         result = await self._client.search(
             query=params.query,
             sort=sort_str,
@@ -86,6 +86,7 @@ class EbayAdapter:
             offset=params.offset,
             min_price=min_price,
             max_price=max_price,
+            category_id=params.category_id,
         )
 
         if isinstance(result, Failure):

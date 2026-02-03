@@ -196,7 +196,12 @@ class ChatService:
         request: ChatRequest,
         context: ConversationContext,
     ) -> ChatResponse:
-        """Handle a refinement intent."""
+        """Handle a refinement intent by modifying the previous search."""
+        # If no previous search, fall back to treating it as a new search
+        if not context.last_search_intent:
+            logger.info("No previous search context, treating refinement as new search")
+            return await self._handle_search(request, context)
+
         # Extract refinement intent
         refinement_result = await self._gemini.extract_refinement_intent(request.content, context)
 
@@ -205,18 +210,144 @@ class ChatService:
                 "Failed to extract refinement",
                 error=refinement_result.error.message,
             )
-            # Fall back to new search
-            return await self._handle_search(request, context)
+            # Fall back to new search with context
+            return await self._handle_search_with_context(request, context)
 
         refinement = refinement_result.value
         logger.info(
             "Extracted refinement",
             type=refinement.refinement_type,
+            filter_criteria=refinement.filter_criteria,
         )
 
-        # For now, treat refinements as new searches with modifications
-        # Full refinement logic would reuse previous results
-        return await self._handle_search(request, context)
+        # Build a modified search based on the previous intent + refinement
+        previous_intent = context.last_search_intent
+
+        # Create modified search intent
+        from services.gemini.types import SearchIntent
+        from services.marketplaces.base import SortOrder
+        from decimal import Decimal
+
+        # Apply filter criteria from refinement
+        max_price = previous_intent.max_price
+        min_price = previous_intent.min_price
+        condition = previous_intent.condition
+        require_free_shipping = previous_intent.require_free_shipping
+        sort_criteria = list(previous_intent.sort_criteria)
+
+        # Parse refinement filters
+        filters = refinement.filter_criteria or {}
+        if "max_price" in filters:
+            max_price = Decimal(str(filters["max_price"]))
+        if "min_price" in filters:
+            min_price = Decimal(str(filters["min_price"]))
+        if "condition" in filters:
+            condition = filters["condition"]
+        if "free_shipping" in filters and filters["free_shipping"]:
+            require_free_shipping = True
+        
+        # Handle seller rating filter
+        min_seller_rating = previous_intent.min_seller_rating
+        if "min_seller_rating" in filters:
+            min_seller_rating = float(filters["min_seller_rating"])
+
+        # Apply sort preference if specified (adds to sort criteria)
+        sort_mapping = {
+            "price_asc": SortOrder.PRICE_ASC,
+            "price_desc": SortOrder.PRICE_DESC,
+            "newest": SortOrder.NEWEST,
+            "rating_desc": SortOrder.BEST_SELLER,
+        }
+        
+        if refinement.sort_preference:
+            new_sort = sort_mapping.get(refinement.sort_preference)
+            if new_sort:
+                # Replace primary sort with new preference
+                sort_criteria = [new_sort] + [s for s in sort_criteria if s != new_sort]
+
+        # Handle special refinement types
+        if refinement.refinement_type == "cheapest":
+            sort_criteria = [SortOrder.PRICE_ASC] + [s for s in sort_criteria if s != SortOrder.PRICE_ASC]
+        elif refinement.refinement_type == "best_rated":
+            sort_criteria = [SortOrder.BEST_SELLER] + [s for s in sort_criteria if s != SortOrder.BEST_SELLER]
+            if min_seller_rating is None:
+                min_seller_rating = 4.0  # Default to 4+ stars
+
+        modified_intent = SearchIntent(
+            query=previous_intent.query,
+            original_query=f"{previous_intent.original_query} ({request.content})",
+            sort_criteria=tuple(sort_criteria),
+            min_price=min_price,
+            max_price=max_price,
+            require_free_shipping=require_free_shipping,
+            min_seller_rating=min_seller_rating,
+            condition=condition,
+            destination_country=previous_intent.destination_country or request.destination_country,
+            include_import_taxes=previous_intent.include_import_taxes,
+            limit=previous_intent.limit,
+            keywords=previous_intent.keywords,
+            ebay_category_id=previous_intent.ebay_category_id,
+            meli_category_id=previous_intent.meli_category_id,
+        )
+
+        logger.info(
+            "Modified search intent for refinement",
+            query=modified_intent.query,
+            max_price=modified_intent.max_price,
+            sort_criteria=modified_intent.sort_criteria,
+        )
+
+        # Execute the modified search
+        search_request = SearchRequest(
+            intent=modified_intent,
+            marketplace_codes=request.marketplace_codes,
+            user_id=request.user_id,
+            destination_country=request.destination_country,
+        )
+
+        search_result = await self._search.search(search_request)
+
+        if isinstance(search_result, Failure):
+            logger.warning("Refinement search failed", error=search_result.error.message)
+            return self._create_error_response(
+                "No pude aplicar el filtro. Por favor intenta de nuevo."
+            )
+
+        results = search_result.value
+        message = self._format_search_response(modified_intent.query, results)
+
+        return ChatResponse(
+            message=message,
+            intent_type=IntentType.REFINEMENT,
+            search_intent=modified_intent,
+            search_results=results,
+        )
+
+    async def _handle_search_with_context(
+        self,
+        request: ChatRequest,
+        context: ConversationContext,
+    ) -> ChatResponse:
+        """Handle search using context from previous queries."""
+        if not context.last_search_intent:
+            return await self._handle_search(request, context)
+
+        # Try to extract what the user wants to filter
+        # Combine previous query with new request
+        combined_query = f"{context.last_search_intent.query} {request.content}"
+
+        # Create a modified request with the combined query
+        from services.chat.types import ChatRequest as CR
+        modified_request = CR(
+            content=combined_query,
+            conversation_id=request.conversation_id,
+            user_id=request.user_id,
+            marketplace_codes=request.marketplace_codes,
+            conversation_history=request.conversation_history,
+            destination_country=request.destination_country,
+        )
+
+        return await self._handle_search(modified_request, context)
 
     async def _handle_more_results(
         self,
@@ -246,16 +377,64 @@ class ChatService:
 
     def _build_context(self, request: ChatRequest) -> ConversationContext:
         """Build conversation context from request."""
+        from decimal import Decimal
+        from services.gemini.types import SearchIntent
+        from services.marketplaces.base import SortOrder
+        
         context = ConversationContext(
             selected_marketplaces=list(request.marketplace_codes),
         )
 
-        # Add conversation history
+        # Add conversation history and find the last search intent
+        last_search_params = None
+        results_count = 0
+        
         for msg in request.conversation_history:
             if msg.get("role") == "user":
                 context.add_user_message(msg.get("content", ""))
             elif msg.get("role") == "assistant":
                 context.add_assistant_message(msg.get("content", ""))
+                # Track the last search params from assistant messages
+                if msg.get("search_params"):
+                    last_search_params = msg["search_params"]
+                    # Try to get results count from search_results if present
+                    results_count = 20  # Default assumption
+
+        # Reconstruct last_search_intent if we have search params
+        if last_search_params:
+            sort_mapping = {
+                "relevance": SortOrder.RELEVANCE,
+                "price_asc": SortOrder.PRICE_ASC,
+                "price_desc": SortOrder.PRICE_DESC,
+                "newest": SortOrder.NEWEST,
+                "best_seller": SortOrder.BEST_SELLER,
+            }
+            
+            sort_criteria = tuple(
+                sort_mapping[s] for s in last_search_params.get("sort_criteria", [])
+                if s in sort_mapping
+            )
+            
+            context.last_search_intent = SearchIntent(
+                query=last_search_params.get("query", ""),
+                original_query=last_search_params.get("original_query", ""),
+                sort_criteria=sort_criteria,
+                min_price=Decimal(str(last_search_params["min_price"])) if last_search_params.get("min_price") else None,
+                max_price=Decimal(str(last_search_params["max_price"])) if last_search_params.get("max_price") else None,
+                condition=last_search_params.get("condition"),
+                require_free_shipping=last_search_params.get("require_free_shipping", False),
+                min_seller_rating=last_search_params.get("min_seller_rating"),
+                limit=last_search_params.get("limit", 20),
+                ebay_category_id=last_search_params.get("ebay_category_id"),
+                meli_category_id=last_search_params.get("meli_category_id"),
+            )
+            context.last_results_count = results_count
+            
+            logger.debug(
+                "Reconstructed search context",
+                query=context.last_search_intent.query,
+                results_count=results_count,
+            )
 
         return context
 
