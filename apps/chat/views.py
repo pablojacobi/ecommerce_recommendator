@@ -17,6 +17,7 @@ from core.logging import get_logger
 
 if TYPE_CHECKING:
     from django.http import HttpRequest
+    from services.marketplaces.factory import MarketplaceFactory
 
 logger = get_logger(__name__)
 
@@ -38,7 +39,7 @@ def index(request: HttpRequest) -> HttpResponse:
             user=request.user,
             title="",  # Will be generated on first message
         )
-        conversations = [conversation]
+        conversations = Conversation.objects.filter(id=conversation.id)
 
     # Get messages for current conversation
     chat_messages = conversation.messages.order_by("created_at")
@@ -68,7 +69,7 @@ def new_conversation(request: HttpRequest) -> HttpResponse:
 
 
 @login_required
-def conversation(request: HttpRequest, conversation_id) -> HttpResponse:
+def conversation(request: "HttpRequest", conversation_id: object) -> HttpResponse:
     """Display a specific conversation."""
     from core.config import get_settings
 
@@ -162,7 +163,7 @@ def send_message(request: HttpRequest) -> HttpResponse:
         products = response_data.get("products", [])
         serializable_products = _make_json_serializable(products)
         search_intent = response_data.get("search_intent")
-        
+
         Message.objects.create(
             conversation=conversation,
             role=Message.Role.ASSISTANT,
@@ -208,7 +209,7 @@ def send_message(request: HttpRequest) -> HttpResponse:
     return HttpResponse(assistant_message_html)
 
 
-def _make_json_serializable(obj):
+def _make_json_serializable(obj: object) -> object:
     """Recursively convert Decimal and other non-JSON types to JSON-serializable types."""
     from decimal import Decimal
 
@@ -235,7 +236,7 @@ def _detect_spanish(text: str) -> bool:
     return any(word in text_lower for word in spanish_indicators)
 
 
-def _create_marketplace_factory(config) -> "MarketplaceFactory":
+def _create_marketplace_factory(config: object) -> "MarketplaceFactory":
     """Create and configure the marketplace factory with all adapters."""
     from apps.search.models import Marketplace
     from services.marketplaces.ebay.adapter import EbayAdapter
@@ -251,24 +252,24 @@ def _create_marketplace_factory(config) -> "MarketplaceFactory":
     for marketplace in active_marketplaces:
         if marketplace.provider == Marketplace.Provider.EBAY:
             # Create eBay adapter - uses app_id, cert_id, marketplace_id
-            adapter = EbayAdapter(
-                app_id=config.ebay.app_id,
-                cert_id=config.ebay.cert_id.get_secret_value(),
+            ebay_adapter = EbayAdapter(
+                app_id=config.ebay.app_id,  # type: ignore[attr-defined]
+                cert_id=config.ebay.cert_id.get_secret_value(),  # type: ignore[attr-defined]
                 marketplace_id=marketplace.code,
             )
-            factory.register(marketplace.code, adapter)
+            factory.register(marketplace.code, ebay_adapter)
 
         elif marketplace.provider == Marketplace.Provider.MERCADOLIBRE:
             # Create MercadoLibre adapter - uses site_id and credentials
             client = MercadoLibreClient(
                 site_id=marketplace.api_site_id,
-                app_id=config.mercadolibre.app_id if config.mercadolibre.is_configured else None,
-                client_secret=config.mercadolibre.client_secret.get_secret_value()
-                if config.mercadolibre.is_configured
+                app_id=config.mercadolibre.app_id if config.mercadolibre.is_configured else None,  # type: ignore[attr-defined]
+                client_secret=config.mercadolibre.client_secret.get_secret_value()  # type: ignore[attr-defined]
+                if config.mercadolibre.is_configured  # type: ignore[attr-defined]
                 else None,
             )
-            adapter = MercadoLibreAdapter(site_id=marketplace.api_site_id, client=client)
-            factory.register(marketplace.code, adapter)
+            meli_adapter = MercadoLibreAdapter(site_id=marketplace.api_site_id, client=client)
+            factory.register(marketplace.code, meli_adapter)
 
     logger.info(
         "Marketplace factory initialized",

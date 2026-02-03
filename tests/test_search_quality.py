@@ -1,5 +1,7 @@
 """TDD Tests for search quality - ensuring relevant results."""
 
+from typing import Any
+
 import pytest
 from unittest.mock import MagicMock, patch, AsyncMock
 from decimal import Decimal
@@ -9,7 +11,7 @@ from django.urls import reverse
 
 
 @pytest.fixture
-def user(db):
+def user(db: Any) -> Any:
     """Create a test user."""
     from apps.accounts.models import User
     return User.objects.create_user(
@@ -20,7 +22,7 @@ def user(db):
 
 
 @pytest.fixture
-def client():
+def client() -> Client:
     """Return Django test client."""
     return Client()
 
@@ -61,8 +63,8 @@ class TestSearchQueryExtraction:
                 "dame el mejor precio para una switch 2 nueva u open box"
             )
 
-            assert result.is_success
-            intent = result.value
+            assert result.is_success()
+            intent = result.value  # type: ignore[union-attr]
 
             # The query should include "Nintendo" to avoid D2R results
             assert "nintendo" in intent.query.lower() or "switch" in intent.query.lower()
@@ -101,8 +103,8 @@ class TestSearchQueryExtraction:
                 "switch 2 nueva u open box"
             )
 
-            assert result.is_success
-            intent = result.value
+            assert result.is_success()
+            intent = result.value  # type: ignore[union-attr]
             # Should capture condition preference
             assert intent.condition == "new" or "open box" in intent.keywords
 
@@ -139,8 +141,8 @@ class TestSearchQueryExtraction:
                 "dame el mejor precio para una switch 2"
             )
 
-            assert result.is_success
-            intent = result.value
+            assert result.is_success()
+            intent = result.value  # type: ignore[union-attr]
             assert intent.sort_order == SortOrder.PRICE_ASC
 
 
@@ -282,7 +284,7 @@ class TestEndToEndSearchQuality:
     """E2E test for search quality."""
 
     def test_switch_2_search_returns_consoles_not_d2r(
-        self, client: Client, user
+        self, client: Client, user: Any
     ) -> None:
         """Searching for Switch 2 should return Nintendo consoles, not D2R items."""
         from apps.chat.models import Conversation

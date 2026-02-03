@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import asyncio
 from decimal import Decimal
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from core.logging import get_logger
 from core.result import Failure, Result, Success, failure, success
@@ -49,7 +49,7 @@ class SearchOrchestrator:
         factory: MarketplaceFactory,
         default_timeout: float = 30.0,
         tax_calculator: TaxCalculatorService | None = None,
-        gemini_client=None,
+        gemini_client: Any | None = None,
     ) -> None:
         """
         Initialize the orchestrator.

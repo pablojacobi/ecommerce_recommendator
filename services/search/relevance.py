@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import re
 from decimal import Decimal
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from core.logging import get_logger
 
@@ -50,11 +50,11 @@ JSON only:"""
 
 
 async def filter_relevant_products_async(
-    products: list[EnrichedProduct],
+    products: list["EnrichedProduct"],
     search_query: str,
     original_query: str,
-    gemini_client=None,
-) -> list[EnrichedProduct]:
+    gemini_client: "Any | None" = None,
+) -> list["EnrichedProduct"]:
     """
     Filter products using AI classification.
 
@@ -82,11 +82,11 @@ async def filter_relevant_products_async(
 
 
 async def _filter_with_ai(
-    products: list[EnrichedProduct],
-    gemini_client,
+    products: list["EnrichedProduct"],
+    gemini_client: Any,
     search_query: str,
     original_query: str,
-) -> list[EnrichedProduct]:
+) -> list["EnrichedProduct"]:
     """Filter products using Gemini AI classification and relevance check."""
     # Build product list for classification
     product_lines = []

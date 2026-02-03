@@ -63,7 +63,7 @@ def sample_search_intent() -> SearchIntent:
     return SearchIntent(
         query="laptop gaming",
         original_query="Busco un laptop gaming barato",
-        sort_order=SortOrder.PRICE_ASC,
+        sort_criteria=(SortOrder.PRICE_ASC,),
         limit=20,
     )
 
@@ -610,6 +610,8 @@ class TestChatServiceTaxIntegration:
             is_best_price=True,
             price_rank=1,
             tax_info=TaxInfo(
+                product_price_usd=Decimal("1000"),
+                shipping_cost_usd=Decimal("0"),
                 customs_duty=Decimal("60"),
                 vat=Decimal("189.99"),
                 total_taxes=Decimal("249.99"),
@@ -671,6 +673,8 @@ class TestChatServiceTaxIntegration:
             is_best_price=True,
             price_rank=1,
             tax_info=TaxInfo(
+                product_price_usd=Decimal("9.99"),
+                shipping_cost_usd=Decimal("0"),
                 customs_duty=Decimal("0"),
                 vat=Decimal("0"),
                 total_taxes=Decimal("0"),

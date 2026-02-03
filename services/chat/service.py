@@ -419,7 +419,7 @@ class ChatService:
                     results_count = 20  # Default assumption
 
         # Reconstruct last_search_intent if we have search params
-        if last_search_params:
+        if last_search_params and isinstance(last_search_params, dict):
             sort_mapping = {
                 "relevance": SortOrder.RELEVANCE,
                 "price_asc": SortOrder.PRICE_ASC,
@@ -463,7 +463,7 @@ class ChatService:
     ) -> str:
         """Format a search response message in user's language."""
         is_spanish = self._is_spanish(self._current_user_content)
-        
+
         if not results.products:
             failed = results.failed_marketplaces
             if failed:

@@ -322,7 +322,7 @@ class TestConversationChatEndpoint:
         search_intent = SearchIntent(
             query="laptop",
             original_query="Find laptop",
-            sort_order=SortOrder.PRICE_ASC,
+            sort_criteria=(SortOrder.PRICE_ASC,),
             min_price=Decimal("100"),
             max_price=Decimal("2000"),
             limit=20,
@@ -386,7 +386,7 @@ class TestConversationChatEndpoint:
         search_intent = SearchIntent(
             query="gaming laptop",
             original_query="Test query",
-            sort_order=SortOrder.RELEVANCE,
+            sort_criteria=(SortOrder.RELEVANCE,),
             limit=20,
         )
         search_results = AggregatedResult(

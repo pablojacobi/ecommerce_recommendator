@@ -89,7 +89,7 @@ class TestSearchOrchestratorSearch:
         return SearchIntent(
             query="laptop gaming",
             original_query="buscar laptop gaming",
-            sort_order=SortOrder.PRICE_ASC,
+            sort_criteria=(SortOrder.PRICE_ASC,),
             limit=20,
         )
 
@@ -390,7 +390,7 @@ class TestSearchOrchestratorSorting:
         intent = SearchIntent(
             query="laptop",
             original_query="laptop",
-            sort_order=SortOrder.PRICE_ASC,
+            sort_criteria=(SortOrder.PRICE_ASC,),
         )
         request = SearchRequest(
             intent=intent,
@@ -427,7 +427,7 @@ class TestSearchOrchestratorSorting:
         intent = SearchIntent(
             query="laptop",
             original_query="laptop",
-            sort_order=SortOrder.PRICE_DESC,
+            sort_criteria=(SortOrder.PRICE_DESC,),
         )
         request = SearchRequest(
             intent=intent,
@@ -464,7 +464,7 @@ class TestSearchOrchestratorSorting:
         intent = SearchIntent(
             query="laptop",
             original_query="laptop",
-            sort_order=SortOrder.BEST_SELLER,
+            sort_criteria=(SortOrder.BEST_SELLER,),
         )
         request = SearchRequest(
             intent=intent,
@@ -501,7 +501,7 @@ class TestSearchOrchestratorSorting:
         intent = SearchIntent(
             query="laptop",
             original_query="laptop",
-            sort_order=SortOrder.NEWEST,
+            sort_criteria=(SortOrder.NEWEST,),
         )
         request = SearchRequest(
             intent=intent,
@@ -586,7 +586,7 @@ class TestSearchOrchestratorInterleaving:
         intent = SearchIntent(
             query="laptop",
             original_query="laptop",
-            sort_order=SortOrder.RELEVANCE,
+            sort_criteria=(SortOrder.RELEVANCE,),
         )
         request = SearchRequest(
             intent=intent,
@@ -643,7 +643,7 @@ class TestSearchOrchestratorPriceMarking:
         intent = SearchIntent(
             query="laptop",
             original_query="laptop",
-            sort_order=SortOrder.RELEVANCE,
+            sort_criteria=(SortOrder.RELEVANCE,),
         )
         request = SearchRequest(
             intent=intent,
@@ -919,7 +919,7 @@ class TestSearchOrchestratorEdgeCases:
         intent = SearchIntent(
             query="laptop",
             original_query="laptop",
-            sort_order=SortOrder.PRICE_ASC,
+            sort_criteria=(SortOrder.PRICE_ASC,),
         )
         request = SearchRequest(
             intent=intent,
@@ -979,7 +979,7 @@ class TestSearchOrchestratorEdgeCases:
         intent = SearchIntent(
             query="laptop",
             original_query="laptop",
-            sort_order=None,
+            sort_criteria=(),
         )
         request = SearchRequest(
             intent=intent,
@@ -1276,6 +1276,8 @@ class TestSearchOrchestratorTaxCalculation:
             marketplace_code="EBAY_US",
             marketplace_name="eBay United States",
             tax_info=TaxInfo(
+                product_price_usd=Decimal("100"),
+                shipping_cost_usd=Decimal("0"),
                 customs_duty=Decimal("6"),
                 vat=Decimal("19"),
                 total_taxes=Decimal("25"),

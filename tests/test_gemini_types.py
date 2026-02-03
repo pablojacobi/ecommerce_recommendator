@@ -57,7 +57,7 @@ class TestSearchIntent:
         intent = SearchIntent(
             query="gaming laptop",
             original_query="find gaming laptop under 1000",
-            sort_order=SortOrder.PRICE_ASC,
+            sort_criteria=(SortOrder.PRICE_ASC,),
             min_price=Decimal("500"),
             max_price=Decimal("1000"),
             require_free_shipping=True,

@@ -86,12 +86,12 @@ def create_schema_raw(force_recreate: bool = False) -> None:
 def setup_django() -> None:
     """Setup Django with appropriate settings based on environment."""
     environment = os.environ.get("ENVIRONMENT", "development")
-    
+
     if environment == "production":
         settings_module = "core.settings.production"
     else:
         settings_module = "core.settings.development"
-    
+
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", settings_module)
     print(f"Using Django settings: {settings_module}")
 
@@ -119,12 +119,12 @@ def load_fixtures() -> None:
         call_command("loaddata", "marketplaces", verbosity=1)
     except IntegrityError:
         print("  Marketplaces already loaded, skipping.")
-    
+
     try:
         call_command("loaddata", "import_tax_rates", verbosity=1)
     except IntegrityError:
         print("  Import tax rates already loaded, skipping.")
-    
+
     print("Fixtures loaded.")
 
 

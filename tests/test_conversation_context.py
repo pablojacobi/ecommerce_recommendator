@@ -1,5 +1,7 @@
 """Tests for conversation context handling - TDD for multi-turn conversations."""
 
+from typing import Any, Generator
+
 import pytest
 from unittest.mock import MagicMock, patch, AsyncMock
 from decimal import Decimal
@@ -11,7 +13,7 @@ from apps.chat.models import Conversation, Message
 
 
 @pytest.fixture
-def user(db):
+def user(db: Any) -> Any:
     """Create a test user."""
     from apps.accounts.models import User
     return User.objects.create_user(
@@ -22,7 +24,7 @@ def user(db):
 
 
 @pytest.fixture
-def client():
+def client() -> Client:
     """Return Django test client."""
     return Client()
 
@@ -32,7 +34,7 @@ class TestConversationContext:
     """Test that the chat follows conversation context across multiple messages."""
 
     def test_second_message_uses_context_from_first(
-        self, client: Client, user
+        self, client: Client, user: Any
     ) -> None:
         """
         Scenario:
@@ -163,7 +165,7 @@ class TestConversationContext:
         assert call_kwargs is not None, "_process_chat was not called"
 
     def test_refinement_query_does_not_search_for_none(
-        self, client: Client, user
+        self, client: Client, user: Any
     ) -> None:
         """
         When user sends a refinement like "solo los baratos", the system
@@ -242,7 +244,7 @@ class TestConversationContext:
             assert "conversation" in call_kwargs or len(call_kwargs.get("conversation_history", [])) > 0
 
     def test_gemini_receives_conversation_history(
-        self, client: Client, user
+        self, client: Client, user: Any
     ) -> None:
         """
         Verify that when processing a message, the full conversation history
