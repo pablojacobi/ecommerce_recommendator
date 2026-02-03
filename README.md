@@ -106,9 +106,9 @@ Manejo explícito de errores sin excepciones:
 ```python
 result = await adapter.search(params)
 match result:
-    case Success(value): 
+    case Success(value):
         # Handle success
-    case Failure(error): 
+    case Failure(error):
         # Handle error
 ```
 
@@ -401,8 +401,8 @@ class ChatService:
 
 **Envío de Mensajes:**
 ```html
-<form hx-post="/chat/send/" 
-      hx-target="#chat-messages" 
+<form hx-post="/chat/send/"
+      hx-target="#chat-messages"
       hx-swap="beforeend">
     <!-- Auto-scroll, indicador de carga -->
 </form>
@@ -588,15 +588,15 @@ jobs:
 
 ### Code Quality Standards
 
-✅ **Zero `noqa` comments** - Todos los warnings se corrigen, no se suprimen  
-✅ **Strict mypy** - Type checking estricto  
-✅ **100% Test Coverage** - Sin excepciones  
-✅ **Conventional Commits** - Commits semánticos  
-✅ **Design Patterns** - Architecture patterns aplicados  
-✅ **Error Handling** - Result pattern, sin excepciones silenciosas  
-✅ **Logging** - Structured logging con structlog  
-✅ **Documentation** - Docstrings en todas las funciones públicas  
-✅ **Security** - Bandit scan, secure defaults  
+✅ **Zero `noqa` comments** - Todos los warnings se corrigen, no se suprimen
+✅ **Strict mypy** - Type checking estricto
+✅ **100% Test Coverage** - Sin excepciones
+✅ **Conventional Commits** - Commits semánticos
+✅ **Design Patterns** - Architecture patterns aplicados
+✅ **Error Handling** - Result pattern, sin excepciones silenciosas
+✅ **Logging** - Structured logging con structlog
+✅ **Documentation** - Docstrings en todas las funciones públicas
+✅ **Security** - Bandit scan, secure defaults
 
 ### Métricas
 
@@ -1014,10 +1014,10 @@ Total                      111        10,536        7,856        1,002        1,
 ──────────────────────────────────────────────────────────────────────────────────
 ```
 
-**Lines of Code:** ~8K  
-**Test Coverage:** 100%  
-**Type Coverage:** 100%  
-**Tests:** 482 passing  
+**Lines of Code:** ~8K
+**Test Coverage:** 100%
+**Type Coverage:** 100%
+**Tests:** 482 passing
 
 ---
 

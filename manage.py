@@ -3,6 +3,13 @@
 
 import os
 import sys
+from pathlib import Path
+
+from dotenv import load_dotenv
+
+# Load .env file from project root
+env_path = Path(__file__).resolve().parent / ".env"
+load_dotenv(env_path)
 
 from django.core.management import execute_from_command_line
 

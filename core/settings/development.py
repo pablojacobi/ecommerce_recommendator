@@ -22,6 +22,9 @@ DEBUG = True
 ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
 
 # Database - prefer DATABASE_URL, fallback to individual params
+# Uses 'ecommerce' schema to separate from other projects (e.g., smart_catalog)
+DB_SCHEMA = os.environ.get("DB_SCHEMA", "ecommerce")
+
 if database_url := os.environ.get("DATABASE_URL"):
     DATABASES = {"default": dj_database_url.parse(database_url)}
 else:
@@ -35,6 +38,11 @@ else:
             "PORT": os.environ.get("DB_PORT", "5432"),
         }
     }
+
+# Set search_path to use dedicated schema only (no fallback to public)
+DATABASES["default"]["OPTIONS"] = {
+    "options": f"-c search_path={DB_SCHEMA}"
+}
 
 # Cache - use Redis if available, otherwise use in-memory cache
 if os.environ.get("REDIS_URL"):

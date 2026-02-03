@@ -72,7 +72,12 @@ class RedisSettings(BaseSettings):
 class MercadoLibreSettings(BaseSettings):
     """MercadoLibre API settings."""
 
-    model_config = SettingsConfigDict(env_prefix="MELI_")
+    model_config = SettingsConfigDict(
+        env_prefix="MELI_",
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
 
     app_id: str = Field(default="", description="MercadoLibre App ID")
     client_secret: SecretStr = Field(
@@ -137,9 +142,17 @@ class Settings(BaseSettings):
         default=SecretStr("django-insecure-change-me-in-production"),
         description="Django secret key",
     )
-    allowed_hosts: list[str] = Field(
-        default_factory=lambda: ["localhost", "127.0.0.1"],
-        description="Allowed hosts",
+
+    # Feature flags
+    enable_mercadolibre: bool = Field(
+        default=False,
+        description="Enable MercadoLibre marketplace (disabled by default due to API restrictions)",
+    )
+    # Use str to avoid Pydantic trying to parse as JSON
+    allowed_hosts_str: str = Field(
+        default="localhost,127.0.0.1",
+        alias="ALLOWED_HOSTS",
+        description="Allowed hosts (comma-separated)",
     )
 
     # Sub-settings
@@ -149,13 +162,12 @@ class Settings(BaseSettings):
     ebay: EbaySettings = Field(default_factory=EbaySettings)
     gemini: GeminiSettings = Field(default_factory=GeminiSettings)
 
-    @field_validator("allowed_hosts", mode="before")
-    @classmethod
-    def parse_allowed_hosts(cls, v: str | list[str]) -> list[str]:
-        """Parse allowed hosts from comma-separated string or list."""
-        if isinstance(v, str):
-            return [h.strip() for h in v.split(",") if h.strip()]
-        return v
+    @property
+    def allowed_hosts(self) -> list[str]:
+        """Get allowed hosts as list."""
+        if not self.allowed_hosts_str:
+            return ["localhost", "127.0.0.1"]
+        return [h.strip() for h in self.allowed_hosts_str.split(",") if h.strip()]
 
     @property
     def is_production(self) -> bool:

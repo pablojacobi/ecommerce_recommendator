@@ -18,6 +18,9 @@ DEBUG = False
 ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "").split(",")
 
 # Database - prefer DATABASE_URL (Railway standard), fallback to individual params
+# Uses 'ecommerce' schema to separate from other projects
+DB_SCHEMA = os.environ.get("DB_SCHEMA", "ecommerce")
+
 if database_url := os.environ.get("DATABASE_URL"):
     DATABASES = {
         "default": dj_database_url.config(
@@ -36,11 +39,14 @@ else:
             "PASSWORD": os.environ.get("DB_PASSWORD", "postgres"),
             "HOST": os.environ.get("DB_HOST", "localhost"),
             "PORT": os.environ.get("DB_PORT", "5432"),
-            "OPTIONS": {
-                "sslmode": "require",
-            },
         }
     }
+
+# Set search_path to use dedicated schema with SSL (no fallback to public)
+DATABASES["default"]["OPTIONS"] = {
+    "sslmode": "require",
+    "options": f"-c search_path={DB_SCHEMA}",
+}
 
 CACHES = {
     "default": {

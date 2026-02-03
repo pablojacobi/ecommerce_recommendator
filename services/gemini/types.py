@@ -29,7 +29,8 @@ class SearchIntent:
 
     Attributes:
         query: The main search query to send to marketplaces.
-        sort_order: Desired sort order (relevance, price_asc, etc.).
+        sort_criteria: Tuple of sort orders (primary first, then secondary, etc.).
+                      Applied locally after fetching results from APIs.
         min_price: Minimum price filter.
         max_price: Maximum price filter.
         require_free_shipping: Whether to filter for free shipping.
@@ -40,11 +41,13 @@ class SearchIntent:
         limit: Number of results requested.
         keywords: Additional keywords extracted for filtering.
         original_query: The original user query.
+        ebay_category_id: eBay category ID for filtering.
+        meli_category_id: MercadoLibre category ID for filtering.
     """
 
     query: str
     original_query: str
-    sort_order: SortOrder | None = None
+    sort_criteria: tuple[SortOrder, ...] = field(default_factory=tuple)
     min_price: Decimal | None = None
     max_price: Decimal | None = None
     require_free_shipping: bool = False
@@ -54,6 +57,13 @@ class SearchIntent:
     include_import_taxes: bool = False
     limit: int = 20
     keywords: tuple[str, ...] = field(default_factory=tuple)
+    ebay_category_id: str | None = None
+    meli_category_id: str | None = None
+    
+    @property
+    def sort_order(self) -> SortOrder | None:
+        """Primary sort order (first in criteria list)."""
+        return self.sort_criteria[0] if self.sort_criteria else None
 
 
 @dataclass(frozen=True, slots=True)

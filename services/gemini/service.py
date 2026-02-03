@@ -11,8 +11,10 @@ from core.result import Failure, Result, failure, success
 from services.gemini.prompts import (
     INTENT_CLASSIFICATION_PROMPT,
     REFINEMENT_PROMPT,
+    RESPONSE_GENERATION_PROMPT,
     SEARCH_EXTRACTION_PROMPT,
     SYSTEM_PROMPT,
+    TITLE_GENERATION_PROMPT,
 )
 from services.gemini.types import (
     ConversationContext,
@@ -255,18 +257,34 @@ class GeminiService:
         original_query: str,
     ) -> SearchIntent:
         """Build SearchIntent from parsed data."""
-        # Map sort order string to enum
-        sort_order = None
-        sort_str = data.get("sort_order")
-        if sort_str:
-            sort_mapping = {
-                "relevance": SortOrder.RELEVANCE,
-                "price_asc": SortOrder.PRICE_ASC,
-                "price_desc": SortOrder.PRICE_DESC,
-                "newest": SortOrder.NEWEST,
-                "best_seller": SortOrder.BEST_SELLER,
-            }
-            sort_order = sort_mapping.get(sort_str)
+        sort_mapping = {
+            "relevance": SortOrder.RELEVANCE,
+            "price_asc": SortOrder.PRICE_ASC,
+            "price_desc": SortOrder.PRICE_DESC,
+            "newest": SortOrder.NEWEST,
+            "best_seller": SortOrder.BEST_SELLER,
+        }
+        
+        # Parse sort criteria (supports N sort orders)
+        sort_criteria: list[SortOrder] = []
+        raw_criteria = data.get("sort_criteria") or []
+        
+        # Handle both old format (sort_order/secondary_sort_order) and new format (sort_criteria array)
+        if not raw_criteria:
+            # Fallback to old format for backwards compatibility
+            if data.get("sort_order"):
+                sort_order = sort_mapping.get(data["sort_order"])
+                if sort_order:
+                    sort_criteria.append(sort_order)
+            if data.get("secondary_sort_order"):
+                secondary = sort_mapping.get(data["secondary_sort_order"])
+                if secondary:
+                    sort_criteria.append(secondary)
+        else:
+            # New format: array of sort criteria
+            for sort_str in raw_criteria:
+                if sort_str and sort_str in sort_mapping:
+                    sort_criteria.append(sort_mapping[sort_str])
 
         # Parse prices
         min_price = None
@@ -277,15 +295,20 @@ class GeminiService:
             max_price = Decimal(str(data["max_price"]))
 
         # Parse keywords
-        keywords = tuple(data.get("keywords", []))
+        keywords = tuple(data.get("keywords") or [])
 
-        # Parse limit
-        limit = min(max(int(data.get("limit", 20)), 1), 100)
+        # Parse limit (handle null from Gemini)
+        raw_limit = data.get("limit")
+        limit = min(max(int(raw_limit) if raw_limit is not None else 20, 1), 100)
+
+        # Parse category IDs
+        ebay_category_id = data.get("ebay_category_id")
+        meli_category_id = data.get("meli_category_id")
 
         return SearchIntent(
             query=data.get("query", original_query),
             original_query=original_query,
-            sort_order=sort_order,
+            sort_criteria=tuple(sort_criteria),
             min_price=min_price,
             max_price=max_price,
             require_free_shipping=bool(data.get("require_free_shipping", False)),
@@ -295,6 +318,8 @@ class GeminiService:
             include_import_taxes=bool(data.get("include_import_taxes", False)),
             limit=limit,
             keywords=keywords,
+            ebay_category_id=ebay_category_id,
+            meli_category_id=meli_category_id,
         )
 
     def _build_refinement_intent(
@@ -320,6 +345,86 @@ class GeminiService:
             f"Previous search: '{context.last_search_intent.original_query}' "
             f"with {context.last_results_count} results"
         )
+
+    async def generate_title(self, message: str) -> str:
+        """
+        Generate a conversation title from the first message.
+
+        Args:
+            message: The user's first message.
+
+        Returns:
+            A short title for the conversation (max 30 chars).
+        """
+        if not message or not message.strip():
+            return "New conversation"
+
+        prompt = TITLE_GENERATION_PROMPT.format(message=message)
+
+        try:
+            client = self._get_client()
+            response = client.models.generate_content(
+                model=self._model,
+                contents=prompt,
+                config={"temperature": 0.3},
+            )
+
+            if response.text:
+                title = response.text.strip()[:30]
+                return title if title else "New conversation"
+            return "New conversation"
+
+        except Exception as e:
+            logger.warning("Failed to generate title", error=str(e))
+            # Fallback: use first 30 chars of message
+            return message[:30].strip() if len(message) > 30 else message
+
+    async def generate_response(
+        self,
+        query: str,
+        count: int,
+        total: int,
+        best_product: str | None = None,
+        marketplace: str | None = None,
+    ) -> str:
+        """
+        Generate a response message for search results.
+
+        Args:
+            query: The search query used.
+            count: Number of products found.
+            total: Total available products.
+            best_product: Description of the best price product.
+            marketplace: Name of the marketplace.
+
+        Returns:
+            A friendly response message in the user's language.
+        """
+        prompt = RESPONSE_GENERATION_PROMPT.format(
+            query=query,
+            count=count,
+            total=total,
+            best_product=best_product or "N/A",
+            marketplace=marketplace or "multiple marketplaces",
+        )
+
+        try:
+            client = self._get_client()
+            response = client.models.generate_content(
+                model=self._model,
+                contents=prompt,
+                config={"temperature": 0.5},
+            )
+
+            if response.text:
+                return response.text.strip()
+
+            # Fallback response
+            return f"Found {count} products for '{query}'."
+
+        except Exception as e:
+            logger.warning("Failed to generate response", error=str(e))
+            return f"Found {count} products for '{query}'."
 
     async def healthcheck(self) -> bool:
         """

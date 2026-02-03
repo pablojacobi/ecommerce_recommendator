@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import time
 from typing import Any
 
 import httpx
@@ -9,6 +10,7 @@ import httpx
 from core.logging import get_logger
 from core.result import Result, failure, success
 from services.marketplaces.errors import (
+    AuthenticationError,
     MarketplaceError,
     NetworkError,
     ParseError,
@@ -60,6 +62,8 @@ class MercadoLibreClient:
     def __init__(
         self,
         site_id: str,
+        app_id: str | None = None,
+        client_secret: str | None = None,
         timeout: float = DEFAULT_TIMEOUT,
     ) -> None:
         """
@@ -67,6 +71,8 @@ class MercadoLibreClient:
 
         Args:
             site_id: MercadoLibre site ID (e.g., 'MLC', 'MLA').
+            app_id: MercadoLibre App ID for authentication.
+            client_secret: MercadoLibre Client Secret for authentication.
             timeout: Request timeout in seconds.
 
         Raises:
@@ -77,13 +83,22 @@ class MercadoLibreClient:
             raise ValueError(msg)
 
         self.site_id = site_id
+        self.app_id = app_id
+        self.client_secret = client_secret
         self.timeout = timeout
         self._client: httpx.AsyncClient | None = None
+        self._access_token: str | None = None
+        self._token_expires_at: float = 0
 
     @property
     def marketplace_code(self) -> str:
         """Return the marketplace code."""
         return self.site_id
+
+    @property
+    def _has_credentials(self) -> bool:
+        """Check if we have credentials for authentication."""
+        return bool(self.app_id and self.client_secret)
 
     async def _get_client(self) -> httpx.AsyncClient:
         """Get or create the HTTP client."""
@@ -94,9 +109,62 @@ class MercadoLibreClient:
                 headers={
                     "Accept": "application/json",
                     "Content-Type": "application/json",
+                    # Use browser-like User-Agent to avoid datacenter IP blocking
+                    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
                 },
             )
         return self._client
+
+    async def _ensure_access_token(self) -> str | None:
+        """Ensure we have a valid access token, refreshing if needed."""
+        if not self._has_credentials:
+            return None
+
+        # Check if token is still valid (with 5 min buffer)
+        if self._access_token and time.time() < (self._token_expires_at - 300):
+            return self._access_token
+
+        # Get new token using Client Credentials flow
+        client = await self._get_client()
+
+        try:
+            response = await client.post(
+                "/oauth/token",
+                data={
+                    "grant_type": "client_credentials",
+                    "client_id": self.app_id,
+                    "client_secret": self.client_secret,
+                },
+                headers={"Content-Type": "application/x-www-form-urlencoded"},
+            )
+
+            if response.status_code == 200:
+                data = response.json()
+                self._access_token = data.get("access_token")
+                expires_in = data.get("expires_in", 21600)  # Default 6 hours
+                self._token_expires_at = time.time() + expires_in
+                logger.info(
+                    "MercadoLibre access token obtained",
+                    site_id=self.site_id,
+                    expires_in=expires_in,
+                )
+                return self._access_token
+            else:
+                logger.error(
+                    "Failed to get MercadoLibre access token",
+                    site_id=self.site_id,
+                    status_code=response.status_code,
+                    response=response.text[:500],
+                )
+                return None
+
+        except Exception as e:
+            logger.error(
+                "Error getting MercadoLibre access token",
+                site_id=self.site_id,
+                error=str(e),
+            )
+            return None
 
     async def close(self) -> None:
         """Close the HTTP client."""
@@ -123,11 +191,20 @@ class MercadoLibreClient:
         """
         client = await self._get_client()
 
+        # Get access token if we have credentials
+        access_token = await self._ensure_access_token()
+
+        # Build headers
+        headers = {}
+        if access_token:
+            headers["Authorization"] = f"Bearer {access_token}"
+
         try:
             response = await client.request(
                 method=method,
                 url=path,
                 params=params,
+                headers=headers if headers else None,
             )
 
             # Handle rate limiting
