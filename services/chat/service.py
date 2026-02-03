@@ -32,6 +32,15 @@ class ChatService:
     4. Formats responses with product recommendations
     """
 
+    # Spanish indicator words for language detection
+    _SPANISH_INDICATORS = {
+        "busco", "quiero", "necesito", "para", "con", "más", "mejor",
+        "barato", "económico", "envío", "precio", "gracias", "hola",
+        "computador", "teléfono", "celular", "el", "la", "un", "una",
+        "dame", "muéstrame", "encuentra", "ordenar", "filtrar", "usado",
+        "nueva", "nuevo", "vendedor", "reputación", "dónde", "cuál",
+    }
+
     def __init__(
         self,
         gemini_service: GeminiService,
@@ -46,6 +55,7 @@ class ChatService:
         """
         self._gemini = gemini_service
         self._search = search_orchestrator
+        self._current_user_content: str = ""  # For language detection
 
     async def process(self, request: ChatRequest) -> ChatResponse:
         """
@@ -65,6 +75,9 @@ class ChatService:
             destination_country=request.destination_country,
         )
 
+        # Store user content for language detection in error messages
+        self._current_user_content = request.content
+
         try:
             return await self._process_request(request)
         except Exception as e:
@@ -74,7 +87,8 @@ class ChatService:
                 conversation_id=request.conversation_id,
             )
             return self._create_error_response(
-                "Ocurrió un error procesando tu solicitud. Por favor intenta de nuevo."
+                "Ocurrió un error procesando tu solicitud. Por favor intenta de nuevo.",
+                "An error occurred processing your request. Please try again.",
             )
 
     async def _process_request(self, request: ChatRequest) -> ChatResponse:
@@ -91,7 +105,8 @@ class ChatService:
                 error=intent_result.error.message,
             )
             return self._create_error_response(
-                "No pude entender tu consulta. ¿Podrías reformularla?"
+                "No pude entender tu consulta. ¿Podrías reformularla?",
+                "I couldn't understand your query. Could you rephrase it?",
             )
 
         intent_type = intent_result.value
@@ -139,7 +154,8 @@ class ChatService:
                 error=intent_result.error.message,
             )
             return self._create_error_response(
-                "No pude identificar qué producto buscas. ¿Podrías ser más específico?"
+                "No pude identificar qué producto buscas. ¿Podrías ser más específico?",
+                "I couldn't identify what product you're looking for. Could you be more specific?",
             )
 
         search_intent = intent_result.value
@@ -176,7 +192,8 @@ class ChatService:
                 error=search_result.error.message,
             )
             return self._create_error_response(
-                "No pude buscar en los marketplaces. Por favor intenta de nuevo."
+                "No pude buscar en los marketplaces. Por favor intenta de nuevo.",
+                "I couldn't search the marketplaces. Please try again.",
             )
 
         results = search_result.value
@@ -310,7 +327,8 @@ class ChatService:
         if isinstance(search_result, Failure):
             logger.warning("Refinement search failed", error=search_result.error.message)
             return self._create_error_response(
-                "No pude aplicar el filtro. Por favor intenta de nuevo."
+                "No pude aplicar el filtro. Por favor intenta de nuevo.",
+                "I couldn't apply the filter. Please try again.",
             )
 
         results = search_result.value
@@ -499,8 +517,27 @@ class ChatService:
 
         return "".join(response_parts)
 
-    def _create_error_response(self, message: str) -> ChatResponse:
-        """Create an error response."""
+    def _is_spanish(self, text: str) -> bool:
+        """Detect if text is likely in Spanish based on common words."""
+        text_lower = text.lower()
+        return any(word in text_lower for word in self._SPANISH_INDICATORS)
+
+    def _create_error_response(
+        self, spanish_msg: str, english_msg: str | None = None
+    ) -> ChatResponse:
+        """Create an error response in the user's language.
+        
+        Args:
+            spanish_msg: Message in Spanish (used if user wrote in Spanish)
+            english_msg: Message in English (used otherwise, defaults to english if not provided)
+        """
+        # Default to English if no english message provided
+        if english_msg is None:
+            english_msg = spanish_msg  # Fallback
+        
+        # Choose message based on user's language
+        message = spanish_msg if self._is_spanish(self._current_user_content) else english_msg
+        
         return ChatResponse(
             message=message,
             error=message,
