@@ -13,7 +13,7 @@ RESPOND WITH JSON ONLY."""
 SEARCH_EXTRACTION_PROMPT = """Extract search parameters from user query. Output ONLY JSON.
 
 RULES:
-1. Expand abbreviated product names to full brand names
+1. Expand abbreviated product names to full brand names to disambiguate products (e.g., "switch" → "Nintendo Switch", "ps5" → "PlayStation 5")
 2. Keep query SHORT (2-5 words max) for effective e-commerce search
 3. Translate sorting preferences:
    - "mejor precio/cheapest/BBB/barato" → sort_criteria:["price_asc"]

@@ -274,11 +274,25 @@ class TestChatServiceIntents:
         chat_service: ChatService,
         mock_gemini: MagicMock,
         mock_search: MagicMock,
-        sample_request: ChatRequest,
-        sample_search_intent: SearchIntent,
         sample_aggregated_result: AggregatedResult,
     ) -> None:
-        """Process should handle refinement intent."""
+        """Process should handle refinement intent when a previous search exists."""
+        # A refinement only runs when the conversation already has a prior search;
+        # otherwise it is treated as a brand-new search.
+        request = ChatRequest(
+            content="De esos, el más barato",
+            conversation_id="conv-123",
+            user_id="user-456",
+            marketplace_codes=("MLC", "EBAY_US"),
+            conversation_history=(
+                {"role": "user", "content": "Busco un laptop gaming"},
+                {
+                    "role": "assistant",
+                    "content": "Encontré estos laptops",
+                    "search_params": {"query": "laptop gaming"},
+                },
+            ),
+        )
         mock_gemini.classify_intent = AsyncMock(return_value=success(IntentType.REFINEMENT))
         mock_gemini.extract_refinement_intent = AsyncMock(
             return_value=success(
@@ -288,11 +302,9 @@ class TestChatServiceIntents:
                 )
             )
         )
-        # Falls back to search
-        mock_gemini.extract_search_intent = AsyncMock(return_value=success(sample_search_intent))
         mock_search.search = AsyncMock(return_value=success(sample_aggregated_result))
 
-        response = await chat_service.process(sample_request)
+        response = await chat_service.process(request)
 
         assert response.is_success
         mock_gemini.extract_refinement_intent.assert_called_once()

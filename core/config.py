@@ -8,11 +8,11 @@ with support for environment variables and .env files.
 from __future__ import annotations
 
 from functools import lru_cache
-from typing import Literal
+from typing import Annotated, Literal
 from urllib.parse import urlparse
 
 from pydantic import Field, SecretStr, field_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 
 class DatabaseSettings(BaseSettings):
@@ -131,6 +131,7 @@ class Settings(BaseSettings):
         env_file=".env",
         env_file_encoding="utf-8",
         extra="ignore",
+        populate_by_name=True,
     )
 
     # Environment
@@ -148,11 +149,13 @@ class Settings(BaseSettings):
         default=False,
         description="Enable MercadoLibre marketplace (disabled by default due to API restrictions)",
     )
-    # Use str to avoid Pydantic trying to parse as JSON
-    allowed_hosts_str: str = Field(
-        default="localhost,127.0.0.1",
+    # NoDecode stops pydantic-settings from JSON-parsing the env value, so a plain
+    # comma-separated ALLOWED_HOSTS string is accepted; the validator below normalizes
+    # both comma-separated strings and lists into a list of hosts.
+    allowed_hosts: Annotated[list[str], NoDecode] = Field(
+        default=["localhost", "127.0.0.1"],
         alias="ALLOWED_HOSTS",
-        description="Allowed hosts (comma-separated)",
+        description="Allowed hosts (comma-separated string or list)",
     )
 
     # Sub-settings
@@ -162,12 +165,13 @@ class Settings(BaseSettings):
     ebay: EbaySettings = Field(default_factory=EbaySettings)
     gemini: GeminiSettings = Field(default_factory=GeminiSettings)
 
-    @property
-    def allowed_hosts(self) -> list[str]:
-        """Get allowed hosts as list."""
-        if not self.allowed_hosts_str:
-            return ["localhost", "127.0.0.1"]
-        return [h.strip() for h in self.allowed_hosts_str.split(",") if h.strip()]
+    @field_validator("allowed_hosts", mode="before")
+    @classmethod
+    def _parse_allowed_hosts(cls, value: str | list[str]) -> list[str]:
+        """Accept either a comma-separated string or a list of hosts."""
+        if isinstance(value, str):
+            return [host.strip() for host in value.split(",") if host.strip()]
+        return value
 
     @property
     def is_production(self) -> bool:

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from services.gemini.types import IntentType, SearchIntent
@@ -28,7 +28,7 @@ class ChatRequest:
     conversation_id: str
     user_id: str
     marketplace_codes: tuple[str, ...] = ()
-    conversation_history: tuple[dict[str, str], ...] = ()
+    conversation_history: tuple[dict[str, Any], ...] = ()
     destination_country: str | None = None
 
 

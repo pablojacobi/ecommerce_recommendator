@@ -1,11 +1,10 @@
 """TDD Tests for search quality - ensuring relevant results."""
 
+from decimal import Decimal
 from typing import Any
+from unittest.mock import MagicMock, patch
 
 import pytest
-from unittest.mock import MagicMock, patch, AsyncMock
-from decimal import Decimal
-
 from django.test import Client
 from django.urls import reverse
 
@@ -14,6 +13,7 @@ from django.urls import reverse
 def user(db: Any) -> Any:
     """Create a test user."""
     from apps.accounts.models import User
+
     return User.objects.create_user(
         username="testuser",
         email="test@example.com",
@@ -37,7 +37,7 @@ class TestSearchQueryExtraction:
 
         # Mock the Gemini client response
         mock_response = MagicMock()
-        mock_response.text = '''
+        mock_response.text = """
         {
             "query": "Nintendo Switch 2 console",
             "sort_order": "price_asc",
@@ -51,7 +51,7 @@ class TestSearchQueryExtraction:
             "limit": 20,
             "keywords": ["Nintendo", "Switch", "console", "gaming"]
         }
-        '''
+        """
 
         with patch("google.genai.Client") as mock_client_class:
             mock_client = MagicMock()
@@ -77,7 +77,7 @@ class TestSearchQueryExtraction:
         from services.gemini.service import GeminiService
 
         mock_response = MagicMock()
-        mock_response.text = '''
+        mock_response.text = """
         {
             "query": "Nintendo Switch 2 console",
             "sort_order": "price_asc",
@@ -91,7 +91,7 @@ class TestSearchQueryExtraction:
             "limit": 20,
             "keywords": ["open box", "like new"]
         }
-        '''
+        """
 
         with patch("google.genai.Client") as mock_client_class:
             mock_client = MagicMock()
@@ -99,9 +99,7 @@ class TestSearchQueryExtraction:
             mock_client_class.return_value = mock_client
 
             service = GeminiService(api_key="test-key")
-            result = await service.extract_search_intent(
-                "switch 2 nueva u open box"
-            )
+            result = await service.extract_search_intent("switch 2 nueva u open box")
 
             assert result.is_success()
             intent = result.value  # type: ignore[union-attr]
@@ -115,7 +113,7 @@ class TestSearchQueryExtraction:
         from services.marketplaces.base import SortOrder
 
         mock_response = MagicMock()
-        mock_response.text = '''
+        mock_response.text = """
         {
             "query": "Nintendo Switch 2 console",
             "sort_order": "price_asc",
@@ -129,7 +127,7 @@ class TestSearchQueryExtraction:
             "limit": 20,
             "keywords": []
         }
-        '''
+        """
 
         with patch("google.genai.Client") as mock_client_class:
             mock_client = MagicMock()
@@ -137,9 +135,7 @@ class TestSearchQueryExtraction:
             mock_client_class.return_value = mock_client
 
             service = GeminiService(api_key="test-key")
-            result = await service.extract_search_intent(
-                "dame el mejor precio para una switch 2"
-            )
+            result = await service.extract_search_intent("dame el mejor precio para una switch 2")
 
             assert result.is_success()
             intent = result.value  # type: ignore[union-attr]
@@ -151,8 +147,8 @@ class TestResultRelevanceValidation:
 
     def test_filter_unrelated_products(self) -> None:
         """D2R items should be filtered when searching for Nintendo Switch."""
-        from services.search.types import EnrichedProduct
         from services.marketplaces.base import ProductResult
+        from services.search.types import EnrichedProduct
 
         products = [
             # Irrelevant D2R product
@@ -214,8 +210,8 @@ class TestResultRelevanceValidation:
 
     def test_price_sanity_check(self) -> None:
         """$1 console should be flagged as suspicious."""
-        from services.search.types import EnrichedProduct
         from services.marketplaces.base import ProductResult
+        from services.search.types import EnrichedProduct
 
         products = [
             EnrichedProduct(
@@ -268,7 +264,10 @@ class TestPromptQuality:
         from services.gemini.prompts import SEARCH_EXTRACTION_PROMPT
 
         # Prompt should mention disambiguation or common confusions
-        assert "Nintendo" in SEARCH_EXTRACTION_PROMPT or "disambiguation" in SEARCH_EXTRACTION_PROMPT.lower()
+        assert (
+            "Nintendo" in SEARCH_EXTRACTION_PROMPT
+            or "disambiguation" in SEARCH_EXTRACTION_PROMPT.lower()
+        )
 
     def test_prompt_includes_condition_mapping(self) -> None:
         """Prompt should map various condition terms."""
@@ -283,9 +282,7 @@ class TestPromptQuality:
 class TestEndToEndSearchQuality:
     """E2E test for search quality."""
 
-    def test_switch_2_search_returns_consoles_not_d2r(
-        self, client: Client, user: Any
-    ) -> None:
+    def test_switch_2_search_returns_consoles_not_d2r(self, client: Client, user: Any) -> None:
         """Searching for Switch 2 should return Nintendo consoles, not D2R items."""
         from apps.chat.models import Conversation
 

@@ -91,9 +91,7 @@ class TestChatIndexView:
         assert "EBAY_US" in content
         assert "marketplace" in content
 
-    def test_index_template_renders_without_syntax_errors(
-        self, client: Client, user: User
-    ) -> None:
+    def test_index_template_renders_without_syntax_errors(self, client: Client, user: User) -> None:
         """Chat index template renders completely without Django template errors."""
         client.force_login(user)
         response = client.get(reverse("chat:index"))
@@ -179,7 +177,7 @@ class TestSendMessageView:
         user: User,
         conversation: Conversation,
     ) -> None:
-        """Send message returns HTML with user and assistant messages."""
+        """Send message returns the assistant message HTML partial."""
         mock_process.return_value = {
             "message": "Encontré 5 productos para 'laptop'",
             "products": [],
@@ -198,9 +196,8 @@ class TestSendMessageView:
 
         assert response.status_code == 200
         content = response.content.decode()
-        # User message should be in response
-        assert "Busco un laptop" in content
-        # Assistant message should be in response
+        # The server returns only the assistant message partial; the user message is
+        # rendered client-side (see the send_message view).
         assert "Encontr" in content
 
     @patch("apps.chat.views._process_chat")
