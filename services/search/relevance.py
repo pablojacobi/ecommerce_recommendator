@@ -50,11 +50,11 @@ JSON only:"""
 
 
 async def filter_relevant_products_async(
-    products: list["EnrichedProduct"],
+    products: list[EnrichedProduct],
     search_query: str,
     original_query: str,
-    gemini_client: "Any | None" = None,
-) -> list["EnrichedProduct"]:
+    gemini_client: Any | None = None,
+) -> list[EnrichedProduct]:
     """
     Filter products using AI classification.
 
@@ -82,31 +82,30 @@ async def filter_relevant_products_async(
 
 
 async def _filter_with_ai(
-    products: list["EnrichedProduct"],
+    products: list[EnrichedProduct],
     gemini_client: Any,
     search_query: str,
     original_query: str,
-) -> list["EnrichedProduct"]:
+) -> list[EnrichedProduct]:
     """Filter products using Gemini AI classification and relevance check."""
     # Build product list for classification
     product_lines = []
     for i, p in enumerate(products):
         title = p.product.title[:80]  # Truncate for efficiency
         price = p.product.price
-        product_lines.append(f'{i+1}. ${price} - {title}')
+        product_lines.append(f"{i + 1}. ${price} - {title}")
 
     # Use original query for better context on what user wants
     query_for_matching = original_query or search_query
     prompt = CLASSIFICATION_PROMPT.format(
-        query=query_for_matching,
-        products='\n'.join(product_lines)
+        query=query_for_matching, products="\n".join(product_lines)
     )
 
     # Call Gemini
     response = gemini_client.models.generate_content(
-        model='gemini-2.0-flash',
+        model="gemini-2.0-flash",
         contents=prompt,
-        config={'temperature': 0.1},
+        config={"temperature": 0.1},
     )
 
     if not response.text:
@@ -115,11 +114,11 @@ async def _filter_with_ai(
 
     # Parse response
     text = response.text.strip()
-    if text.startswith('```json'):
+    if text.startswith("```json"):
         text = text[7:]
-    if text.startswith('```'):
+    if text.startswith("```"):
         text = text[3:]
-    if text.endswith('```'):
+    if text.endswith("```"):
         text = text[:-3]
     text = text.strip()
 
@@ -135,10 +134,10 @@ async def _filter_with_ai(
     match_count = 0
 
     for item in classifications:
-        idx = int(item.get('id', 0)) - 1
+        idx = int(item.get("id", 0)) - 1
         if 0 <= idx < len(products):
-            is_physical = item.get('physical', False)
-            is_match = item.get('matches', True)  # Default to True for backwards compat
+            is_physical = item.get("physical", False)
+            is_match = item.get("matches", True)  # Default to True for backwards compat
 
             if is_physical:
                 physical_count += 1
@@ -168,9 +167,7 @@ async def _filter_with_ai(
             physical=physical_count,
         )
         physical_ids = {
-            int(item.get('id', 0)) - 1
-            for item in classifications
-            if item.get('physical', False)
+            int(item.get("id", 0)) - 1 for item in classifications if item.get("physical", False)
         }
         filtered = [p for i, p in enumerate(products) if i in physical_ids]
 
@@ -240,28 +237,27 @@ def _filter_basic(
     return filtered
 
 
+# Ordered category keywords: the first category with a matching term wins.
+_CATEGORY_KEYWORDS: tuple[tuple[str, tuple[str, ...]], ...] = (
+    ("console", ("switch", "playstation", "xbox", "console", "ps5", "ps4")),
+    ("laptop", ("laptop", "notebook", "macbook")),
+    ("phone", ("iphone", "samsung", "pixel", "phone", "celular", "móvil")),
+    ("tablet", ("ipad", "tablet", "tab")),
+    ("tv", ("tv", "television", "oled", "qled")),
+    ("camera", ("camera", "cámara", "dslr", "mirrorless")),
+    ("headphones", ("headphone", "auricular", "airpod", "earbud")),
+    ("watch", ("watch", "reloj", "smartwatch")),
+    ("gaming", ("gaming", "gamer", "rtx", "gpu")),
+)
+
+
 def _detect_category(search_query: str, original_query: str) -> str:
     """Detect the product category from the query."""
     combined = f"{search_query} {original_query}".lower()
 
-    if any(term in combined for term in ["switch", "playstation", "xbox", "console", "ps5", "ps4"]):
-        return "console"
-    if any(term in combined for term in ["laptop", "notebook", "macbook"]):
-        return "laptop"
-    if any(term in combined for term in ["iphone", "samsung", "pixel", "phone", "celular", "móvil"]):
-        return "phone"
-    if any(term in combined for term in ["ipad", "tablet", "tab"]):
-        return "tablet"
-    if any(term in combined for term in ["tv", "television", "oled", "qled"]):
-        return "tv"
-    if any(term in combined for term in ["camera", "cámara", "dslr", "mirrorless"]):
-        return "camera"
-    if any(term in combined for term in ["headphone", "auricular", "airpod", "earbud"]):
-        return "headphones"
-    if any(term in combined for term in ["watch", "reloj", "smartwatch"]):
-        return "watch"
-    if any(term in combined for term in ["gaming", "gamer", "rtx", "gpu"]):
-        return "gaming"
+    for category, terms in _CATEGORY_KEYWORDS:
+        if any(term in combined for term in terms):
+            return category
 
     return "general"
 
@@ -272,13 +268,43 @@ def _extract_key_terms(search_query: str, original_query: str) -> set[str]:
 
     # Remove common words
     stop_words = {
-        "the", "a", "an", "for", "to", "and", "or", "with", "in", "on",
-        "el", "la", "los", "las", "un", "una", "para", "con", "de", "y", "o",
-        "dame", "busco", "quiero", "mejor", "precio", "nueva", "nuevo", "new",
-        "used", "usada", "usado", "open", "box",
+        "the",
+        "a",
+        "an",
+        "for",
+        "to",
+        "and",
+        "or",
+        "with",
+        "in",
+        "on",
+        "el",
+        "la",
+        "los",
+        "las",
+        "un",
+        "una",
+        "para",
+        "con",
+        "de",
+        "y",
+        "o",
+        "dame",
+        "busco",
+        "quiero",
+        "mejor",
+        "precio",
+        "nueva",
+        "nuevo",
+        "new",
+        "used",
+        "usada",
+        "usado",
+        "open",
+        "box",
     }
 
-    words = re.findall(r'\b\w+\b', combined)
+    words = re.findall(r"\b\w+\b", combined)
     terms = {w for w in words if w not in stop_words and len(w) > 2}
 
     return terms
@@ -305,7 +331,7 @@ def _calculate_relevance_score(
             score -= 0.3
 
     # Check term overlap with query
-    title_words = set(re.findall(r'\b\w+\b', title_lower))
+    title_words = set(re.findall(r"\b\w+\b", title_lower))
     overlap = query_terms & title_words
     overlap_ratio = len(overlap) / max(len(query_terms), 1)
 
@@ -316,7 +342,16 @@ def _calculate_relevance_score(
 
     # Category-specific checks
     if category == "console":
-        console_brands = ["nintendo", "switch", "playstation", "sony", "xbox", "microsoft", "ps5", "ps4"]
+        console_brands = [
+            "nintendo",
+            "switch",
+            "playstation",
+            "sony",
+            "xbox",
+            "microsoft",
+            "ps5",
+            "ps4",
+        ]
         if not any(brand in title_lower for brand in console_brands):
             score -= 0.3
 
@@ -340,8 +375,18 @@ def is_likely_physical_product(product: EnrichedProduct) -> bool:
 
     # Very cheap items with certain keywords are likely virtual
     if price < Decimal("20.00"):
-        virtual_hints = ["code", "key", "digital", "download", "membership",
-                        "subscription", "shiny", "6iv", "trade", "v-bucks"]
+        virtual_hints = [
+            "code",
+            "key",
+            "digital",
+            "download",
+            "membership",
+            "subscription",
+            "shiny",
+            "6iv",
+            "trade",
+            "v-bucks",
+        ]
         if any(hint in title_lower for hint in virtual_hints):
             return False
 

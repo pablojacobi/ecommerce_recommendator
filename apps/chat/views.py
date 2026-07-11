@@ -17,6 +17,7 @@ from core.logging import get_logger
 
 if TYPE_CHECKING:
     from django.http import HttpRequest
+
     from services.marketplaces.factory import MarketplaceFactory
 
 logger = get_logger(__name__)
@@ -69,7 +70,7 @@ def new_conversation(request: HttpRequest) -> HttpResponse:
 
 
 @login_required
-def conversation(request: "HttpRequest", conversation_id: object) -> HttpResponse:
+def conversation(request: HttpRequest, conversation_id: object) -> HttpResponse:
     """Display a specific conversation."""
     from core.config import get_settings
 
@@ -171,7 +172,9 @@ def send_message(request: HttpRequest) -> HttpResponse:
             search_results={
                 "products": serializable_products,
                 "has_more": response_data.get("has_more", False),
-            } if serializable_products else None,
+            }
+            if serializable_products
+            else None,
             search_params=search_intent,  # Persist the search intent for context
         )
 
@@ -228,15 +231,33 @@ def _make_json_serializable(obj: object) -> object:
 def _detect_spanish(text: str) -> bool:
     """Detect if text is likely in Spanish based on common words."""
     spanish_indicators = [
-        "busco", "quiero", "necesito", "para", "con", "más", "mejor",
-        "barato", "económico", "envío", "precio", "gracias", "hola",
-        "laptop", "computador", "teléfono", "celular", "el", "la", "un", "una",
+        "busco",
+        "quiero",
+        "necesito",
+        "para",
+        "con",
+        "más",
+        "mejor",
+        "barato",
+        "económico",
+        "envío",
+        "precio",
+        "gracias",
+        "hola",
+        "laptop",
+        "computador",
+        "teléfono",
+        "celular",
+        "el",
+        "la",
+        "un",
+        "una",
     ]
     text_lower = text.lower()
     return any(word in text_lower for word in spanish_indicators)
 
 
-def _create_marketplace_factory(config: object) -> "MarketplaceFactory":
+def _create_marketplace_factory(config: object) -> MarketplaceFactory:
     """Create and configure the marketplace factory with all adapters."""
     from apps.search.models import Marketplace
     from services.marketplaces.ebay.adapter import EbayAdapter
@@ -292,7 +313,6 @@ def _process_chat(
     """Process chat message using ChatService."""
     from services.chat import ChatRequest, ChatService
     from services.gemini.service import GeminiService
-    from services.marketplaces.factory import MarketplaceFactory
     from services.search.orchestrator import SearchOrchestrator
 
     # Build conversation history (include search_params for context)
@@ -350,7 +370,9 @@ def _process_chat(
         result["search_intent"] = {
             "query": intent.query,
             "original_query": intent.original_query,
-            "sort_criteria": [str(s.value) for s in intent.sort_criteria] if intent.sort_criteria else [],
+            "sort_criteria": [str(s.value) for s in intent.sort_criteria]
+            if intent.sort_criteria
+            else [],
             "min_price": float(intent.min_price) if intent.min_price else None,
             "max_price": float(intent.max_price) if intent.max_price else None,
             "condition": intent.condition,
@@ -373,8 +395,12 @@ def _process_chat(
                 "image_url": enriched.product.image_url,
                 "marketplace_code": enriched.marketplace_code,
                 "marketplace_name": enriched.marketplace_name,
-                "seller_rating": float(enriched.product.seller_rating) if enriched.product.seller_rating else None,
-                "shipping_cost": float(enriched.product.shipping_cost) if enriched.product.shipping_cost else None,
+                "seller_rating": float(enriched.product.seller_rating)
+                if enriched.product.seller_rating
+                else None,
+                "shipping_cost": float(enriched.product.shipping_cost)
+                if enriched.product.shipping_cost
+                else None,
                 "free_shipping": enriched.product.free_shipping,
                 "is_best_price": enriched.is_best_price,
                 "tax_info": None,

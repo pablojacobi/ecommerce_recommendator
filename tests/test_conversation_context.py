@@ -1,11 +1,9 @@
 """Tests for conversation context handling - TDD for multi-turn conversations."""
 
-from typing import Any, Generator
+from typing import Any
+from unittest.mock import patch
 
 import pytest
-from unittest.mock import MagicMock, patch, AsyncMock
-from decimal import Decimal
-
 from django.test import Client
 from django.urls import reverse
 
@@ -16,6 +14,7 @@ from apps.chat.models import Conversation, Message
 def user(db: Any) -> Any:
     """Create a test user."""
     from apps.accounts.models import User
+
     return User.objects.create_user(
         username="testuser",
         email="test@example.com",
@@ -33,9 +32,7 @@ def client() -> Client:
 class TestConversationContext:
     """Test that the chat follows conversation context across multiple messages."""
 
-    def test_second_message_uses_context_from_first(
-        self, client: Client, user: Any
-    ) -> None:
+    def test_second_message_uses_context_from_first(self, client: Client, user: Any) -> None:
         """
         Scenario:
         1. User: "busco un macbook air M4"
@@ -164,9 +161,7 @@ class TestConversationContext:
         call_kwargs = mock_process.call_args
         assert call_kwargs is not None, "_process_chat was not called"
 
-    def test_refinement_query_does_not_search_for_none(
-        self, client: Client, user: Any
-    ) -> None:
+    def test_refinement_query_does_not_search_for_none(self, client: Client, user: Any) -> None:
         """
         When user sends a refinement like "solo los baratos", the system
         should NOT search for literal "None" or return an error.
@@ -189,7 +184,12 @@ class TestConversationContext:
             search_results={
                 "products": [
                     {"id": "1", "title": "MacBook Air M4", "price": 999.00, "currency": "USD"},
-                    {"id": "2", "title": "MacBook Air M4 Budget", "price": 750.00, "currency": "USD"},
+                    {
+                        "id": "2",
+                        "title": "MacBook Air M4 Budget",
+                        "price": 750.00,
+                        "currency": "USD",
+                    },
                 ],
                 "has_more": False,
             },
@@ -241,11 +241,12 @@ class TestConversationContext:
             call_kwargs = mock_process.call_args[1]
 
             # Verify conversation history was passed
-            assert "conversation" in call_kwargs or len(call_kwargs.get("conversation_history", [])) > 0
+            assert (
+                "conversation" in call_kwargs
+                or len(call_kwargs.get("conversation_history", [])) > 0
+            )
 
-    def test_gemini_receives_conversation_history(
-        self, client: Client, user: Any
-    ) -> None:
+    def test_gemini_receives_conversation_history(self, client: Client, user: Any) -> None:
         """
         Verify that when processing a message, the full conversation history
         is passed to the chat service so Gemini can understand context.
@@ -290,12 +291,13 @@ class TestConversationContext:
             if call_args[1]:  # kwargs
                 # Should have conversation or conversation_history
                 has_context = (
-                    "conversation" in call_args[1] or
-                    "conversation_history" in call_args[1]
+                    "conversation" in call_args[1] or "conversation_history" in call_args[1]
                 )
                 assert has_context, "No conversation context passed to _process_chat"
 
                 # If conversation_history is passed, it should have previous messages
                 if "conversation_history" in call_args[1]:
                     history = call_args[1]["conversation_history"]
-                    assert len(history) >= 2, f"Expected at least 2 history items, got {len(history)}"
+                    assert len(history) >= 2, (
+                        f"Expected at least 2 history items, got {len(history)}"
+                    )

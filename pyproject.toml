@@ -58,9 +58,23 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-# Tests: allow asserts, unused args, magic values, hardcoded passwords, inline imports, commented explanations
-"tests/**/*.py" = ["S101", "ARG001", "ARG002", "PLR2004", "S105", "S106", "PLC0415", "ERA001"]
+# Tests: allow asserts, unused args, magic values, hardcoded passwords, inline imports,
+# commented explanations, unnecessary lambdas (test doubles), and mutable class attrs (fixtures)
+"tests/**/*.py" = [
+    "S101",
+    "ARG001",
+    "ARG002",
+    "PLR2004",
+    "S105",
+    "S106",
+    "PLC0415",
+    "ERA001",
+    "PLW0108",
+    "RUF012",
+]
 "**/migrations/*.py" = ["E501"]
+# Setup scripts: print progress to the console and lazy-import Django models after django.setup()
+"scripts/**/*.py" = ["T201", "PLC0415"]
 # Django settings pattern: wildcard imports from base settings
 "core/settings/development.py" = ["F403", "F405"]
 "core/settings/production.py" = ["F403", "F405"]
@@ -75,10 +89,16 @@ ignore = [
 "apps/**/views.py" = ["RUF012", "ARG002", "TC002", "PLC0415"]
 # Gemini service needs lazy import to avoid import errors when google-genai not installed
 "services/gemini/service.py" = ["PLC0415"]
+# Prompt templates contain intentionally long lines
+"services/gemini/prompts.py" = ["E501"]
+# Chat service uses lazy imports to avoid circular dependencies with other services
+"services/chat/service.py" = ["PLC0415"]
 # Tax service needs local imports to avoid circular dependencies with Django models
 "services/taxes/service.py" = ["PLC0415"]
-# Orchestrator uses MarketplaceFactory at runtime (not just for typing)
-"services/search/orchestrator.py" = ["TC001"]
+# Orchestrator uses MarketplaceFactory at runtime (not just for typing) and lazy-imports it
+"services/search/orchestrator.py" = ["TC001", "PLC0415"]
+# Relevance module embeds a long AI-classification prompt template
+"services/search/relevance.py" = ["E501"]
 # Search types use Decimal at runtime in dataclasses
 "services/search/types.py" = ["TC003"]
 

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import StrEnum
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from services.marketplaces.base import SortOrder
 
 
-class IntentType(str, Enum):
+class IntentType(StrEnum):
     """Types of user intents."""
 
     SEARCH = "search"
@@ -59,7 +59,7 @@ class SearchIntent:
     keywords: tuple[str, ...] = field(default_factory=tuple)
     ebay_category_id: str | None = None
     meli_category_id: str | None = None
-    
+
     @property
     def sort_order(self) -> SortOrder | None:
         """Primary sort order (first in criteria list)."""

@@ -40,9 +40,7 @@ else:
     }
 
 # Set search_path to use dedicated schema only (no fallback to public)
-DATABASES["default"]["OPTIONS"] = {
-    "options": f"-c search_path={DB_SCHEMA}"
-}
+DATABASES["default"]["OPTIONS"] = {"options": f"-c search_path={DB_SCHEMA}"}
 
 # Cache - use Redis if available, otherwise use in-memory cache
 if os.environ.get("REDIS_URL"):

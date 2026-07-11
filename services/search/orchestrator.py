@@ -299,8 +299,10 @@ class SearchOrchestrator:
         if min_seller_rating is not None:
             before_rating_filter = len(filtered_products)
             filtered_products = [
-                p for p in filtered_products
-                if p.product.seller_rating is not None and p.product.seller_rating >= min_seller_rating
+                p
+                for p in filtered_products
+                if p.product.seller_rating is not None
+                and p.product.seller_rating >= min_seller_rating
             ]
             if len(filtered_products) < before_rating_filter:
                 logger.info(
@@ -333,16 +335,16 @@ class SearchOrchestrator:
     ) -> list[EnrichedProduct]:
         """
         Sort products according to N sort criteria.
-        
+
         Uses Python's stable sort: applies sorts in REVERSE order (last to first).
         This ensures that the primary criterion (first in list) takes precedence,
         while subsequent criteria act as tie-breakers.
-        
+
         Example: sort_criteria = (PRICE_ASC, BEST_SELLER, NEWEST)
         - First sorts by NEWEST
         - Then by BEST_SELLER (preserving NEWEST order for ties)
         - Finally by PRICE_ASC (preserving previous order for ties)
-        
+
         Result: Products ordered by price, with same-price items ordered by
         seller rating, and same-rating items ordered by recency.
         """
@@ -350,17 +352,17 @@ class SearchOrchestrator:
             return products
 
         result = list(products)
-        
+
         # Apply sorts in reverse order (last criterion first)
         for sort_order in reversed(sort_criteria):
             result = self._apply_single_sort(result, sort_order)
-        
+
         # If no criteria specified, use relevance (interleave)
         if not sort_criteria:
             result = self._interleave_results(result)
-        
+
         return result
-    
+
     def _apply_single_sort(
         self,
         products: list[EnrichedProduct],

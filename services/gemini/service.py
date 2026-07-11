@@ -264,12 +264,13 @@ class GeminiService:
             "newest": SortOrder.NEWEST,
             "best_seller": SortOrder.BEST_SELLER,
         }
-        
+
         # Parse sort criteria (supports N sort orders)
         sort_criteria: list[SortOrder] = []
         raw_criteria = data.get("sort_criteria") or []
-        
-        # Handle both old format (sort_order/secondary_sort_order) and new format (sort_criteria array)
+
+        # Handle both the old format (sort_order/secondary_sort_order)
+        # and the new format (sort_criteria array)
         if not raw_criteria:
             # Fallback to old format for backwards compatibility
             if data.get("sort_order"):

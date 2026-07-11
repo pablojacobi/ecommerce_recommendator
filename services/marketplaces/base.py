@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 if TYPE_CHECKING:
@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from services.marketplaces.errors import MarketplaceError
 
 
-class SortOrder(str, Enum):
+class SortOrder(StrEnum):
     """Sort order options for search results."""
 
     RELEVANCE = "relevance"

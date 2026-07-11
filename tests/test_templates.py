@@ -1,8 +1,8 @@
 """Tests for Django template rendering - ensures no broken template tags."""
 
 import pytest
-from django.template.loader import get_template, render_to_string
 from django.template import TemplateSyntaxError
+from django.template.loader import get_template, render_to_string
 
 
 class TestTemplateCompilation:
@@ -176,7 +176,6 @@ class TestNoSplitTemplateTags:
     @pytest.mark.parametrize("template_path", TEMPLATE_FILES)
     def test_no_split_variable_tags(self, template_path: str) -> None:
         """Variable tags {{ }} should not be split across lines."""
-        import os
         from pathlib import Path
 
         # Get the project root
@@ -203,7 +202,6 @@ class TestNoSplitTemplateTags:
     @pytest.mark.parametrize("template_path", TEMPLATE_FILES)
     def test_no_split_block_tags(self, template_path: str) -> None:
         """Block tags {% %} should not be split across lines."""
-        import os
         from pathlib import Path
 
         project_root = Path(__file__).parent.parent
@@ -221,6 +219,4 @@ class TestNoSplitTemplateTags:
                 open_count = line.count("{%")
                 close_count = line.count("%}")
                 if open_count > close_count:
-                    pytest.fail(
-                        f"{template_path}:{i} - Split block tag detected: {line.strip()}"
-                    )
+                    pytest.fail(f"{template_path}:{i} - Split block tag detected: {line.strip()}")

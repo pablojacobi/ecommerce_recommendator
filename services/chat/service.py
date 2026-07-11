@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 from core.logging import get_logger
 from core.result import Failure
@@ -33,12 +33,39 @@ class ChatService:
     """
 
     # Spanish indicator words for language detection
-    _SPANISH_INDICATORS = {
-        "busco", "quiero", "necesito", "para", "con", "más", "mejor",
-        "barato", "económico", "envío", "precio", "gracias", "hola",
-        "computador", "teléfono", "celular", "el", "la", "un", "una",
-        "dame", "muéstrame", "encuentra", "ordenar", "filtrar", "usado",
-        "nueva", "nuevo", "vendedor", "reputación", "dónde", "cuál",
+    _SPANISH_INDICATORS: ClassVar[set[str]] = {
+        "busco",
+        "quiero",
+        "necesito",
+        "para",
+        "con",
+        "más",
+        "mejor",
+        "barato",
+        "económico",
+        "envío",
+        "precio",
+        "gracias",
+        "hola",
+        "computador",
+        "teléfono",
+        "celular",
+        "el",
+        "la",
+        "un",
+        "una",
+        "dame",
+        "muéstrame",
+        "encuentra",
+        "ordenar",
+        "filtrar",
+        "usado",
+        "nueva",
+        "nuevo",
+        "vendedor",
+        "reputación",
+        "dónde",
+        "cuál",
     }
 
     def __init__(
@@ -208,7 +235,7 @@ class ChatService:
             search_results=results,
         )
 
-    async def _handle_refinement(
+    async def _handle_refinement(  # noqa: PLR0912 -- sequential refinement rules read clearer inline
         self,
         request: ChatRequest,
         context: ConversationContext,
@@ -241,9 +268,10 @@ class ChatService:
         previous_intent = context.last_search_intent
 
         # Create modified search intent
+        from decimal import Decimal
+
         from services.gemini.types import SearchIntent
         from services.marketplaces.base import SortOrder
-        from decimal import Decimal
 
         # Apply filter criteria from refinement
         max_price = previous_intent.max_price
@@ -260,7 +288,7 @@ class ChatService:
             min_price = Decimal(str(filters["min_price"]))
         if "condition" in filters:
             condition = filters["condition"]
-        if "free_shipping" in filters and filters["free_shipping"]:
+        if filters.get("free_shipping"):
             require_free_shipping = True
 
         # Handle seller rating filter
@@ -284,9 +312,13 @@ class ChatService:
 
         # Handle special refinement types
         if refinement.refinement_type == "cheapest":
-            sort_criteria = [SortOrder.PRICE_ASC] + [s for s in sort_criteria if s != SortOrder.PRICE_ASC]
+            sort_criteria = [SortOrder.PRICE_ASC] + [
+                s for s in sort_criteria if s != SortOrder.PRICE_ASC
+            ]
         elif refinement.refinement_type == "best_rated":
-            sort_criteria = [SortOrder.BEST_SELLER] + [s for s in sort_criteria if s != SortOrder.BEST_SELLER]
+            sort_criteria = [SortOrder.BEST_SELLER] + [
+                s for s in sort_criteria if s != SortOrder.BEST_SELLER
+            ]
             if min_seller_rating is None:
                 min_seller_rating = 4.0  # Default to 4+ stars
 
@@ -356,6 +388,7 @@ class ChatService:
 
         # Create a modified request with the combined query
         from services.chat.types import ChatRequest as CR
+
         modified_request = CR(
             content=combined_query,
             conversation_id=request.conversation_id,
@@ -396,6 +429,7 @@ class ChatService:
     def _build_context(self, request: ChatRequest) -> ConversationContext:
         """Build conversation context from request."""
         from decimal import Decimal
+
         from services.gemini.types import SearchIntent
         from services.marketplaces.base import SortOrder
 
@@ -429,7 +463,8 @@ class ChatService:
             }
 
             sort_criteria = tuple(
-                sort_mapping[s] for s in last_search_params.get("sort_criteria", [])
+                sort_mapping[s]
+                for s in last_search_params.get("sort_criteria", [])
                 if s in sort_mapping
             )
 
@@ -437,8 +472,12 @@ class ChatService:
                 query=last_search_params.get("query", ""),
                 original_query=last_search_params.get("original_query", ""),
                 sort_criteria=sort_criteria,
-                min_price=Decimal(str(last_search_params["min_price"])) if last_search_params.get("min_price") else None,
-                max_price=Decimal(str(last_search_params["max_price"])) if last_search_params.get("max_price") else None,
+                min_price=Decimal(str(last_search_params["min_price"]))
+                if last_search_params.get("min_price")
+                else None,
+                max_price=Decimal(str(last_search_params["max_price"]))
+                if last_search_params.get("max_price")
+                else None,
                 condition=last_search_params.get("condition"),
                 require_free_shipping=last_search_params.get("require_free_shipping", False),
                 min_seller_rating=last_search_params.get("min_seller_rating"),
@@ -456,7 +495,7 @@ class ChatService:
 
         return context
 
-    def _format_search_response(
+    def _format_search_response(  # noqa: PLR0912 -- branches map 1:1 to response variations
         self,
         query: str,
         results: AggregatedResult,
@@ -496,14 +535,18 @@ class ChatService:
             response_parts = [f"Encontré {count} productos para '{query}'"]
             if total > count:
                 response_parts.append(f" (de {total} disponibles)")
-            response_parts.append(f" en {marketplaces} marketplace{'s' if marketplaces > 1 else ''}.")
+            response_parts.append(
+                f" en {marketplaces} marketplace{'s' if marketplaces > 1 else ''}."
+            )
             if results.has_more:
                 response_parts.append(" Si quieres ver más resultados, solo dímelo.")
         else:
             response_parts = [f"Found {count} products for '{query}'"]
             if total > count:
                 response_parts.append(f" (out of {total} available)")
-            response_parts.append(f" in {marketplaces} marketplace{'s' if marketplaces > 1 else ''}.")
+            response_parts.append(
+                f" in {marketplaces} marketplace{'s' if marketplaces > 1 else ''}."
+            )
             if results.has_more:
                 response_parts.append(" Let me know if you want to see more results.")
 

@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 env_path = Path(__file__).resolve().parent / ".env"
 load_dotenv(env_path)
 
-from django.core.management import execute_from_command_line
+from django.core.management import execute_from_command_line  # noqa: E402 -- must load .env first
 
 
 def main() -> None:

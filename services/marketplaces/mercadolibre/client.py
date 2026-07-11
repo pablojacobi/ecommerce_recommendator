@@ -10,7 +10,6 @@ import httpx
 from core.logging import get_logger
 from core.result import Result, failure, success
 from services.marketplaces.errors import (
-    AuthenticationError,
     MarketplaceError,
     NetworkError,
     ParseError,
@@ -110,7 +109,7 @@ class MercadoLibreClient:
                     "Accept": "application/json",
                     "Content-Type": "application/json",
                     # Use browser-like User-Agent to avoid datacenter IP blocking
-                    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",  # noqa: E501 -- single UA string
                 },
             )
         return self._client
