@@ -11,9 +11,9 @@ Usage:
 
 import argparse
 import os
+import secrets
 import sys
 from pathlib import Path
-from urllib.parse import urlparse
 
 # Add project root to path
 project_root = Path(__file__).resolve().parent.parent
@@ -26,9 +26,9 @@ def load_env() -> None:
     if not env_file.exists():
         return
 
-    with open(env_file) as f:
-        for line in f:
-            line = line.strip()
+    with env_file.open() as f:
+        for raw_line in f:
+            line = raw_line.strip()
             if not line or line.startswith("#"):
                 continue
             if "=" in line:
@@ -128,19 +128,26 @@ def load_fixtures() -> None:
     print("Fixtures loaded.")
 
 
-def create_user(email: str, password: str) -> None:
-    """Create a user with the given credentials."""
+def create_user(email: str, password: str | None = None) -> None:
+    """Create a user with the given credentials.
+
+    The password is taken from the ``SETUP_DB_USER_PASSWORD`` environment
+    variable when not provided explicitly. If neither is set, a random one is
+    generated and printed so nothing sensitive is hardcoded in the repository.
+    """
     from apps.accounts.models import User
 
     if User.objects.filter(email=email).exists():
         print(f"\nUser '{email}' already exists.")
         return
 
+    password = password or os.environ.get("SETUP_DB_USER_PASSWORD") or secrets.token_urlsafe(12)
+
     print(f"\nCreating user '{email}'...")
     # Use email prefix as username
-    username = email.split("@")[0]
+    username = email.split("@", maxsplit=1)[0]
     user = User.objects.create_user(username=username, email=email, password=password)
-    print(f"User '{user.email}' created successfully.")
+    print(f"User '{user.email}' created successfully (password: {password}).")
 
 
 if __name__ == "__main__":
@@ -167,8 +174,7 @@ if __name__ == "__main__":
 
     # Create default user
     create_user(
-        email="pablo@test.com",
-        password="1%8/4&AZ",
+        email=os.environ.get("SETUP_DB_USER_EMAIL", "admin@example.com"),
     )
 
     print("\n✓ Database setup complete!")
